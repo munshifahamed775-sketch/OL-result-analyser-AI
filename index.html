@@ -1,0 +1,3137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OL Analyzer V9 - School Management Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                        'poppins': ['Poppins', 'sans-serif'],
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'slide-in': 'slide-in 0.5s ease-out',
+                        'fade-in': 'fade-in 0.8s ease-out',
+                        'bounce-gentle': 'bounce-gentle 2s infinite',
+                        'pulse-soft': 'pulse-soft 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        'float': {
+                            '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
+                            '50%': { transform: 'translateY(-15px) rotate(5deg)' }
+                        },
+                        'slide-in': {
+                            '0%': { transform: 'translateY(30px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        },
+                        'fade-in': {
+                            '0%': { opacity: '0', transform: 'scale(0.95)' },
+                            '100%': { opacity: '1', transform: 'scale(1)' }
+                        },
+                        'bounce-gentle': {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' }
+                        },
+                        'pulse-soft': {
+                            '0%, 100%': { opacity: '0.8' },
+                            '50%': { opacity: '1' }
+                        }
+                    },
+                    backdropBlur: {
+                        'xs': '2px',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            animation: gradient-shift 20s ease infinite;
+        }
+        
+        @keyframes gradient-shift {
+            0%, 100% { background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%); }
+            25% { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 25%, #667eea 50%, #764ba2 75%, #f093fb 100%); }
+            50% { background: linear-gradient(135deg, #f093fb 0%, #f5576c 25%, #4facfe 50%, #00f2fe 75%, #667eea 100%); }
+            75% { background: linear-gradient(135deg, #764ba2 0%, #667eea 25%, #f5576c 50%, #f093fb 75%, #4facfe 100%); }
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .glass-card-dark {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        
+        .floating-object {
+            position: absolute;
+            opacity: 0.15;
+            animation: float 8s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        .charm-button {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .charm-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .version-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .program-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .program-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            background: rgba(255, 255, 255, 0.18);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .drag-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .drag-area.drag-over {
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .result-table {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .table-row:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .grade-a { color: #10b981; font-weight: 600; }
+        .grade-b { color: #3b82f6; font-weight: 600; }
+        .grade-c { color: #f59e0b; font-weight: 600; }
+        .grade-s { color: #ef4444; font-weight: 600; }
+        .grade-w { color: #6b7280; font-weight: 600; }
+
+        .processing-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .processing-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #ffffff;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .stream-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .stream-card.recommended {
+            border: 2px solid #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .stream-card.suitable {
+            border: 2px solid #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .stream-card.not-suitable {
+            border: 2px solid #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .custom-table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .custom-table th, .custom-table td {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px;
+            text-align: center;
+        }
+
+        .custom-table input {
+            background: transparent;
+            border: none;
+            color: white;
+            text-align: center;
+            width: 100%;
+            padding: 4px;
+        }
+
+        .custom-table input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .footer-credentials {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            z-index: 30;
+        }
+
+        .floating-tabs {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .floating-tab {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .floating-tab:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .floating-tab.active {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        .ai-assistant-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            transition: right 0.3s ease;
+            z-index: 60;
+            overflow-y: auto;
+        }
+
+        .ai-assistant-panel.open {
+            right: 0;
+        }
+
+        .youtube-panel {
+            position: fixed;
+            bottom: -300px;
+            left: 20px;
+            right: 20px;
+            height: 300px;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px 20px 0 0;
+            transition: bottom 0.3s ease;
+            z-index: 55;
+            overflow: hidden;
+        }
+
+        .youtube-panel.open {
+            bottom: 0;
+        }
+
+        .maths-requirements-panel {
+            position: fixed;
+            top: 0;
+            left: -450px;
+            width: 450px;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: left 0.3s ease;
+            z-index: 60;
+            overflow-y: auto;
+        }
+
+        .maths-requirements-panel.open {
+            left: 0;
+        }
+
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 80%;
+        }
+
+        .chat-message.user {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .chat-message.ai {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            margin-right: auto;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px;
+        }
+
+        .video-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .video-card:hover {
+            transform: scale(1.05);
+        }
+
+        .processing-sound {
+            position: fixed;
+            top: -100px;
+            left: -100px;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen font-inter overflow-x-hidden">
+    <!-- Version Badge -->
+    <div class="version-badge">VERSION 12.0 - AI ASSISTANT & YOUTUBE INTEGRATION</div>
+
+    <!-- Floating Tabs -->
+    <div class="floating-tabs" id="floatingTabs" style="display: none;">
+        <div class="floating-tab" onclick="toggleAIAssistant()" title="AI Assistant">
+            <span class="text-2xl">🤖</span>
+        </div>
+        <div class="floating-tab" onclick="toggleYouTubePanel()" title="A-Level Stream Videos">
+            <span class="text-2xl">📺</span>
+        </div>
+        <div class="floating-tab" onclick="toggleMathsStreamRequirements()" title="Maths Stream Requirements">
+            <span class="text-2xl">📐</span>
+        </div>
+        <div class="floating-tab" onclick="toggleSoundEffects()" title="Sound Effects" id="soundToggle">
+            <span class="text-2xl">🔊</span>
+        </div>
+    </div>
+
+    <!-- AI Assistant Panel -->
+    <div class="ai-assistant-panel" id="aiAssistantPanel">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-white font-bold text-xl">🤖 AI Assistant</h3>
+                <button onclick="toggleAIAssistant()" class="text-white/60 hover:text-white">✕</button>
+            </div>
+            
+            <div class="mb-4">
+                <div class="p-4 glass-card rounded-lg">
+                    <p class="text-white/80 text-sm">
+                        👋 Hi! I'm your AI study assistant. I can help you with:
+                        <br>• A-Level subject selection
+                        <br>• Career guidance
+                        <br>• Study tips
+                        <br>• University requirements
+                        <br>• YouTube educational videos
+                    </p>
+                </div>
+            </div>
+
+            <div id="chatMessages" class="h-96 overflow-y-auto mb-4 p-2">
+                <!-- Chat messages will appear here -->
+            </div>
+
+            <div class="flex space-x-2">
+                <input type="text" id="chatInput" placeholder="Ask me anything about A-Levels..." 
+                       class="flex-1 px-4 py-2 glass-card-dark rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <button onclick="sendMessage()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-white">
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- YouTube Panel -->
+    <div class="youtube-panel" id="youtubePanel">
+        <div class="flex items-center justify-between p-4 border-b border-white/10">
+            <h3 class="text-white font-bold text-lg">📺 A-Level Stream Guidance & Motivation</h3>
+            <button onclick="toggleYouTubePanel()" class="text-white/60 hover:text-white">✕</button>
+        </div>
+        <div id="videoContainer" class="video-grid">
+            <!-- YouTube videos will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Mathematics Stream Requirements Panel -->
+    <div class="maths-requirements-panel" id="mathsRequirementsPanel">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-white font-bold text-xl">📐 A-Level Mathematics Stream Requirements</h3>
+                <button onclick="toggleMathsStreamRequirements()" class="text-white/60 hover:text-white">✕</button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- O/L Pass Requirements Section -->
+                <div class="glass-card p-6 rounded-xl">
+                    <h4 class="text-white font-bold text-lg mb-4 flex items-center">
+                        <span class="text-2xl mr-3">🎯</span>
+                        O/L Pass Requirements
+                    </h4>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-blue-500/20 border border-blue-400/30 rounded-lg p-4">
+                            <h5 class="text-blue-300 font-bold mb-2">📚 Minimum Subject Requirements</h5>
+                            <p class="text-white/90 text-sm">You must pass at least <strong>6 subjects</strong> at GCE O/L including:</p>
+                            <ul class="text-white/80 text-sm mt-2 ml-4 space-y-1">
+                                <li>• <strong>Mathematics</strong> (compulsory)</li>
+                                <li>• <strong>Science</strong> (compulsory)</li>
+                                <li>• 4 other subjects of your choice</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-green-500/20 border border-green-400/30 rounded-lg p-4">
+                            <h5 class="text-green-300 font-bold mb-2">⭐ Mathematics Grade Requirement</h5>
+                            <p class="text-white/90 text-sm">A minimum of <strong>"Credit pass (C)"</strong> or above in Mathematics is <strong>compulsory</strong> for A-Level Mathematics stream.</p>
+                            <div class="mt-2 text-xs text-white/70">
+                                <p>• Grade A, B, or C is required</p>
+                                <p>• Grade S is preferred for competitive entry</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-yellow-500/20 border border-yellow-400/30 rounded-lg p-4">
+                            <h5 class="text-yellow-300 font-bold mb-2">🔬 Science & English Requirements</h5>
+                            <p class="text-white/90 text-sm">Science and English are often considered important; many schools require at least a <strong>C pass</strong> in Science.</p>
+                            <div class="mt-2 text-xs text-white/70">
+                                <p>• Science: Credit pass (C) or above recommended</p>
+                                <p>• English: Credit pass (C) or above preferred</p>
+                                <p>• Check with individual schools for specific requirements</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="glass-card p-6 rounded-xl">
+                    <h4 class="text-white font-bold text-lg mb-4 flex items-center">
+                        <span class="text-2xl mr-3">ℹ️</span>
+                        Additional Information
+                    </h4>
+                    
+                    <div class="space-y-3 text-sm text-white/80">
+                        <div class="flex items-start space-x-3">
+                            <span class="text-blue-400 mt-1">•</span>
+                            <p>Some schools may have additional requirements or entrance tests</p>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <span class="text-blue-400 mt-1">•</span>
+                            <p>Advanced Mathematics (if offered) may require higher grades</p>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <span class="text-blue-400 mt-1">•</span>
+                            <p>Contact your preferred school directly for specific admission criteria</p>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <span class="text-blue-400 mt-1">•</span>
+                            <p>Early application is recommended for competitive programs</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="glass-card p-6 rounded-xl">
+                    <h4 class="text-white font-bold text-lg mb-4 flex items-center">
+                        <span class="text-2xl mr-3">🚀</span>
+                        Quick Actions
+                    </h4>
+                    
+                    <div class="grid grid-cols-1 gap-3">
+                        <button onclick="showMathsStreamTable()" class="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-inter font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105">
+                            📊 View Maths Stream Selection Table
+                        </button>
+                        <button onclick="toggleYouTubePanel()" class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-inter font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105">
+                            📺 Watch Related Videos
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Credentials -->
+    <div class="footer-credentials">
+        <div class="flex items-center justify-between text-white text-sm">
+            <div class="flex items-center space-x-6">
+                <div class="text-center">
+                    <p class="text-blue-400 font-bold">👨‍💼 ADMIN</p>
+                    <p class="text-xs">admin@school.lk / Admin2024!</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-green-400 font-bold">🎓 STUDENT</p>
+                    <p class="text-xs">student@school.lk / Student123!</p>
+                </div>
+            </div>
+            <div class="text-center">
+                <p class="text-yellow-400 font-bold">🏫 V12.0 - AI ASSISTANT & YOUTUBE</p>
+                <p class="text-xs">AI Chat • YouTube Videos • Calm Processing Sounds • Floating Tabs</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Processing Sound Elements -->
+    <audio class="processing-sound" id="processingSound" loop>
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
+    </audio>
+
+    <!-- Moving Background Elements -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div class="floating-object top-10 left-10 text-8xl opacity-30 animate-bounce" style="color: #667eea; animation-duration: 3s;">📚</div>
+        <div class="floating-object top-20 right-20 text-7xl opacity-25 animate-pulse" style="animation-delay: 1s; color: #764ba2; animation-duration: 4s;">🔬</div>
+        <div class="floating-object bottom-20 left-20 text-6xl opacity-30 animate-spin" style="animation-delay: 2s; color: #f093fb; animation-duration: 8s;">📊</div>
+        <div class="floating-object bottom-10 right-10 text-8xl opacity-25 animate-bounce" style="animation-delay: 3s; color: #f5576c; animation-duration: 5s;">🎓</div>
+        <div class="floating-object top-1/2 left-1/4 text-7xl opacity-30 animate-pulse" style="animation-delay: 4s; color: #4facfe; animation-duration: 6s;">📐</div>
+        <div class="floating-object top-1/3 right-1/3 text-6xl opacity-25 animate-bounce" style="animation-delay: 5s; color: #00f2fe; animation-duration: 4s;">📝</div>
+    </div>
+
+    <!-- Login Landing Page -->
+    <div id="homePage" class="min-h-screen flex items-center justify-center px-6 relative z-10">
+        <div class="max-w-4xl mx-auto text-center">
+            <div class="mb-12 animate-fade-in">
+                <div class="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-8 backdrop-blur-sm animate-bounce-gentle">
+                    <span class="text-6xl">🏫</span>
+                </div>
+                <h1 class="text-6xl md:text-8xl font-inter font-black text-white mb-6 drop-shadow-lg">
+                    OL ANALYZER V10
+                </h1>
+                <p class="text-2xl md:text-3xl text-white/90 mb-8 font-light">
+                    Secure School Registration Edition
+                </p>
+                <p class="text-lg text-white/70 max-w-3xl mx-auto mb-12">
+                    Advanced school registration system with secure credential generation, custom table builder, and real-time database designed specifically for Sri Lankan schools
+                </p>
+            </div>
+
+            <!-- Login Section -->
+            <div class="glass-card rounded-3xl p-12 max-w-2xl mx-auto">
+                <div class="text-center mb-8">
+                    <div class="flex items-center justify-center space-x-4 mb-6">
+                        <span class="text-6xl">🔐</span>
+                        <h2 class="text-4xl font-inter font-bold text-white">SECURE LOGIN</h2>
+                    </div>
+                    <p class="text-white/80 text-lg mb-8">Enter your credentials to access the school system</p>
+                </div>
+
+                <!-- Google Sign In Tab -->
+                <div class="mb-8">
+                    <button onclick="signInWithGoogle()" class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-inter font-bold py-4 px-6 rounded-xl flex items-center justify-center space-x-3 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        <span class="text-lg">Sign in with Google</span>
+                    </button>
+                    <div class="flex items-center my-6">
+                        <div class="flex-1 border-t border-white/20"></div>
+                        <span class="px-4 text-white/60 text-sm font-inter">or continue with</span>
+                        <div class="flex-1 border-t border-white/20"></div>
+                    </div>
+                </div>
+
+                <!-- Login Form -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2 font-inter">Email/Username</label>
+                        <input type="text" id="loginEmail" placeholder="Enter email or username" class="w-full px-4 py-3 glass-card-dark rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2 font-inter">Password</label>
+                        <input type="password" id="loginPassword" placeholder="Enter password" class="w-full px-4 py-3 glass-card-dark rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all">
+                    </div>
+
+                    <button onclick="processLogin()" class="w-full charm-button py-6 rounded-2xl text-white font-inter font-bold text-xl hover:text-white flex items-center justify-center space-x-4 group">
+                        <span class="text-3xl group-hover:scale-110 transition-transform">🚀</span>
+                        <span>LOGIN TO SYSTEM</span>
+                    </button>
+
+                    <div class="text-center">
+                        <div class="p-4 glass-card-dark rounded-xl mb-6">
+                            <h4 class="text-white font-bold mb-3 flex items-center justify-center">
+                                <span class="text-xl mr-2">🔑</span>
+                                DEMO LOGIN CREDENTIALS
+                            </h4>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div class="p-3 bg-blue-500/20 rounded-lg border border-blue-400/30">
+                                    <p class="text-blue-400 font-bold mb-1">👨‍💼 ADMIN ACCESS</p>
+                                    <p class="text-white/90">Email: <code class="bg-white/10 px-1 rounded">admin@school.lk</code></p>
+                                    <p class="text-white/90">Password: <code class="bg-white/10 px-1 rounded">Admin2024!</code></p>
+                                </div>
+                                <div class="p-3 bg-green-500/20 rounded-lg border border-green-400/30">
+                                    <p class="text-green-400 font-bold mb-1">🎓 STUDENT ACCESS</p>
+                                    <p class="text-white/90">Email: <code class="bg-white/10 px-1 rounded">student@school.lk</code></p>
+                                    <p class="text-white/90">Password: <code class="bg-white/10 px-1 rounded">Student123!</code></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p class="text-white/60 text-sm mb-4">
+                            🔒 Secure Authentication System<br>
+                            📊 Fast Processing & Real Database<br>
+                            🎯 Accurate A-Level Qualification Assessment<br>
+                            🏫 <strong>Designed for Sri Lankan Schools</strong>
+                        </p>
+                        
+                        <div class="flex items-center justify-center space-x-8 text-white/40 text-xs mb-4">
+                            <span>✅ Sound Effects</span>
+                            <span>✅ Custom Tables</span>
+                            <span>✅ Fast Processing</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portal Selection Page -->
+    <div id="portalSelectionPage" class="min-h-screen flex items-center justify-center px-6 relative z-10 hidden">
+        <div class="max-w-6xl mx-auto text-center">
+            <div class="mb-12 animate-fade-in">
+                <h1 class="text-5xl md:text-7xl font-inter font-black text-white mb-6 drop-shadow-lg">
+                    CHOOSE YOUR PORTAL
+                </h1>
+                <p class="text-xl md:text-2xl text-white/90 mb-8 font-light">
+                    Select your access level to continue
+                </p>
+                <div class="glass-card rounded-2xl p-4 max-w-md mx-auto">
+                    <p class="text-white/80 text-sm" id="userWelcome">Welcome, User!</p>
+                </div>
+            </div>
+
+            <!-- Portal Selection -->
+            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <!-- Admin Portal Card -->
+                <div class="glass-card rounded-3xl p-8 hover:scale-105 transition-all duration-300 cursor-pointer" onclick="showAdminPortal()">
+                    <div class="text-center">
+                        <div class="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+                            <span class="text-4xl">👨‍💼</span>
+                        </div>
+                        <h3 class="text-3xl font-inter font-bold text-white mb-4">ADMIN PORTAL</h3>
+                        <p class="text-white/80 mb-6">Manage O-Level result data and secure registration</p>
+                        <div class="space-y-2 text-sm text-white/70">
+                            <p>• School registration system</p>
+                            <p>• Secure credential generation</p>
+                            <p>• Fast file processing</p>
+                            <p>• Custom table builder</p>
+                            <p>• Real-time database</p>
+                        </div>
+                        <div class="mt-4 p-2 glass-card-dark rounded-lg">
+                            <p class="text-xs text-blue-400">🔑 admin / Srilanka123</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Portal Card -->
+                <div class="glass-card rounded-3xl p-8 hover:scale-105 transition-all duration-300 cursor-pointer" onclick="showStudentPortal()">
+                    <div class="text-center">
+                        <div class="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+                            <span class="text-4xl">🎓</span>
+                        </div>
+                        <h3 class="text-3xl font-inter font-bold text-white mb-4">STUDENT PORTAL</h3>
+                        <p class="text-white/80 mb-6">Check results and get A-Level guidance</p>
+                        <div class="space-y-2 text-sm text-white/70">
+                            <p>• Search by index number</p>
+                            <p>• Accurate qualification assessment</p>
+                            <p>• Stream recommendations</p>
+                            <p>• Career guidance</p>
+                            <p>• Performance analysis</p>
+                        </div>
+                        <div class="mt-4 p-2 glass-card-dark rounded-lg">
+                            <p class="text-xs text-green-400">🔑 student / student123</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <button onclick="logout()" class="charm-button px-8 py-3 rounded-xl text-white font-inter">
+                    ← SIGN OUT
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secure Registration Page -->
+    <div id="secureRegistrationPage" class="min-h-screen p-6 hidden relative z-10">
+        <!-- Registration Header -->
+        <div class="fixed top-4 left-4 right-4 glass-card rounded-2xl p-4 z-40">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+                        <span class="text-xl">🏫</span>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-inter font-bold">SECURE SCHOOL REGISTRATION V10.0</h3>
+                        <p class="text-white/60 text-sm">Generate secure credentials for your school</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="showPortalSelection()" class="charm-button px-4 py-2 rounded-lg text-white font-inter">BACK</button>
+                    <button onclick="logout()" class="charm-button px-4 py-2 rounded-lg text-red-300 font-inter">LOGOUT</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-24 pb-20">
+            <div class="max-w-6xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-5xl font-inter font-bold text-white mb-4">SECURE SCHOOL REGISTRATION</h2>
+                    <p class="text-xl text-white/80">Generate secure login credentials for your educational institution</p>
+                </div>
+
+                <div class="grid lg:grid-cols-2 gap-8">
+                    <!-- School Registration Form -->
+                    <div class="glass-card rounded-3xl p-8">
+                        <h3 class="text-2xl font-inter font-bold text-white mb-6 flex items-center">
+                            <span class="text-3xl mr-3">🏫</span>
+                            SCHOOL REGISTRATION
+                        </h3>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-white/80 text-sm font-medium mb-2 font-inter">School Name *</label>
+                                <input type="text" id="schoolName" placeholder="Enter your school name" class="w-full px-4 py-3 glass-card-dark rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-white/80 text-sm font-medium mb-2 font-inter">School Address *</label>
+                                <textarea id="schoolAddress" placeholder="Enter complete school address" rows="3" class="w-full px-4 py-3 glass-card-dark rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all resize-none"></textarea>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-white/80 text-sm font-medium mb-2 font-inter">District</label>
+                                    <select id="schoolDistrict" class="w-full px-4 py-3 glass-card-dark rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-white/30 transition-all">
+                                        <option value="">Select District</option>
+                                        <option value="Colombo">Colombo</option>
+                                        <option value="Gampaha">Gampaha</option>
+                                        <option value="Kalutara">Kalutara</option>
+                                        <option value="Kandy">Kandy</option>
+                                        <option value="Matale">Matale</option>
+                                        <option value="Nuwara Eliya">Nuwara Eliya</option>
+                                        <option value="Galle">Galle</option>
+                                        <option value="Matara">Matara</option>
+                                        <option value="Hambantota">Hambantota</option>
+                                        <option value="Jaffna">Jaffna</option>
+                                        <option value="Kilinochchi">Kilinochchi</option>
+                                        <option value="Mannar">Mannar</option>
+                                        <option value="Vavuniya">Vavuniya</option>
+                                        <option value="Mullaitivu">Mullaitivu</option>
+                                        <option value="Batticaloa">Batticaloa</option>
+                                        <option value="Ampara">Ampara</option>
+                                        <option value="Trincomalee">Trincomalee</option>
+                                        <option value="Kurunegala">Kurunegala</option>
+                                        <option value="Puttalam">Puttalam</option>
+                                        <option value="Anuradhapura">Anuradhapura</option>
+                                        <option value="Polonnaruwa">Polonnaruwa</option>
+                                        <option value="Badulla">Badulla</option>
+                                        <option value="Moneragala">Moneragala</option>
+                                        <option value="Ratnapura">Ratnapura</option>
+                                        <option value="Kegalle">Kegalle</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-white/80 text-sm font-medium mb-2 font-inter">School Type</label>
+                                    <select id="schoolType" class="w-full px-4 py-3 glass-card-dark rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-white/30 transition-all">
+                                        <option value="">Select Type</option>
+                                        <option value="National">National School</option>
+                                        <option value="Provincial">Provincial School</option>
+                                        <option value="Private">Private School</option>
+                                        <option value="International">International School</option>
+                                        <option value="Pirivena">Pirivena</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-white/80 text-sm font-medium mb-2 font-inter">Contact Number</label>
+                                    <input type="tel" id="schoolPhone" placeholder="0112345678" class="w-full px-4 py-3 glass-card-dark rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-white/80 text-sm font-medium mb-2 font-inter">Email Address</label>
+                                    <input type="email" id="schoolEmail" placeholder="school@education.lk" class="w-full px-4 py-3 glass-card-dark rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-white/80 text-sm font-medium mb-2 font-inter">Principal Name</label>
+                                <input type="text" id="principalName" placeholder="Enter principal's name" class="w-full px-4 py-3 glass-card-dark rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all">
+                            </div>
+
+                            <button onclick="generateCredentials()" class="w-full charm-button py-4 rounded-xl text-white font-inter font-bold text-lg flex items-center justify-center space-x-3">
+                                <span class="text-2xl">🔐</span>
+                                <span>GENERATE SECURE CREDENTIALS</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Generated Credentials Display -->
+                    <div class="glass-card rounded-3xl p-8">
+                        <h3 class="text-2xl font-inter font-bold text-white mb-6 flex items-center">
+                            <span class="text-3xl mr-3">🔑</span>
+                            GENERATED CREDENTIALS
+                        </h3>
+                        
+                        <div id="credentialsDisplay" class="hidden">
+                            <div class="space-y-6">
+                                <div class="p-6 glass-card-dark rounded-xl border-2 border-green-400">
+                                    <h4 class="text-green-400 font-bold mb-4 flex items-center">
+                                        <span class="text-xl mr-2">👨‍💼</span>
+                                        ADMIN CREDENTIALS
+                                    </h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                                            <span class="text-white/70">Username:</span>
+                                            <span id="adminUsername" class="text-white font-mono font-bold"></span>
+                                        </div>
+                                        <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                                            <span class="text-white/70">Password:</span>
+                                            <span id="adminPassword" class="text-white font-mono font-bold"></span>
+                                        </div>
+                                        <button onclick="copyCredentials('admin')" class="w-full charm-button py-2 rounded-lg text-white font-inter text-sm">
+                                            📋 COPY ADMIN CREDENTIALS
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="p-6 glass-card-dark rounded-xl border-2 border-blue-400">
+                                    <h4 class="text-blue-400 font-bold mb-4 flex items-center">
+                                        <span class="text-xl mr-2">🎓</span>
+                                        STUDENT CREDENTIALS
+                                    </h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                                            <span class="text-white/70">Username:</span>
+                                            <span id="studentUsername" class="text-white font-mono font-bold"></span>
+                                        </div>
+                                        <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                                            <span class="text-white/70">Password:</span>
+                                            <span id="studentPassword" class="text-white font-mono font-bold"></span>
+                                        </div>
+                                        <button onclick="copyCredentials('student')" class="w-full charm-button py-2 rounded-lg text-white font-inter text-sm">
+                                            📋 COPY STUDENT CREDENTIALS
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="p-4 glass-card-dark rounded-xl border border-yellow-400">
+                                    <h4 class="text-yellow-400 font-bold mb-2 flex items-center">
+                                        <span class="text-lg mr-2">⚠️</span>
+                                        SECURITY NOTICE
+                                    </h4>
+                                    <ul class="text-white/70 text-sm space-y-1">
+                                        <li>• Store these credentials securely</li>
+                                        <li>• Do not share with unauthorized persons</li>
+                                        <li>• Change passwords regularly</li>
+                                        <li>• Use admin credentials for data management</li>
+                                        <li>• Use student credentials for result viewing</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="flex space-x-3">
+                                    <button onclick="downloadCredentials()" class="flex-1 charm-button py-3 rounded-xl text-white font-inter font-bold">
+                                        💾 DOWNLOAD CREDENTIALS
+                                    </button>
+                                    <button onclick="proceedToAdmin()" class="flex-1 charm-button py-3 rounded-xl text-green-300 font-inter font-bold">
+                                        ➡️ PROCEED TO ADMIN
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="credentialsPlaceholder" class="text-center py-12">
+                            <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-3xl">🔐</span>
+                            </div>
+                            <h4 class="text-white/60 font-inter font-bold mb-2">No Credentials Generated</h4>
+                            <p class="text-white/40 text-sm">Fill the school registration form and click "Generate Secure Credentials" to create your login details.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Portal -->
+    <div id="adminPortal" class="min-h-screen p-6 hidden relative z-10">
+        <!-- Admin Header -->
+        <div class="fixed top-4 left-4 right-4 glass-card rounded-2xl p-4 z-40">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
+                        <span class="text-xl">👨‍💼</span>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-inter font-bold">ADMIN PORTAL V10.0</h3>
+                        <p class="text-white/60 text-sm" id="adminUserInfo">Secure School Management System</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="showPortalSelection()" class="charm-button px-4 py-2 rounded-lg text-white font-inter">BACK</button>
+                    <button onclick="logout()" class="charm-button px-4 py-2 rounded-lg text-red-300 font-inter">LOGOUT</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-24 pb-20">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-5xl font-inter font-bold text-white mb-4">SCHOOL DATA MANAGEMENT</h2>
+                    <p class="text-xl text-white/80">Fast processing with custom table builder for Sri Lankan schools</p>
+                </div>
+
+                <div class="grid lg:grid-cols-2 gap-8">
+                    <!-- Data Input Section -->
+                    <div class="glass-card rounded-3xl p-8">
+                        <h3 class="text-2xl font-inter font-bold text-white mb-6">📁 DATA INPUT METHODS</h3>
+                        
+                        <!-- Method Selection -->
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <button onclick="showFileUpload()" class="charm-button p-4 rounded-xl text-white font-inter text-center">
+                                <div class="text-3xl mb-2">📸</div>
+                                <div class="text-sm">FILE UPLOAD</div>
+                            </button>
+                            <button onclick="showTableBuilder()" class="charm-button p-4 rounded-xl text-white font-inter text-center">
+                                <div class="text-3xl mb-2">📊</div>
+                                <div class="text-sm">CUSTOM TABLE</div>
+                            </button>
+                        </div>
+                        
+                        <!-- File Upload Section -->
+                        <div id="fileUploadSection" class="hidden">
+                            <div id="dropZone" class="drag-area rounded-2xl p-12 text-center mb-6 cursor-pointer">
+                                <div class="text-6xl mb-4 animate-bounce-gentle">📸</div>
+                                <h4 class="text-xl font-bold text-white mb-2">Drop O-Level result files here</h4>
+                                <p class="text-white/60 mb-4">Supports .xlsx, .csv formats</p>
+                                <input type="file" id="adminFileInput" accept=".xlsx,.xls,.csv" multiple class="hidden">
+                                <button onclick="document.getElementById('adminFileInput').click()" class="charm-button px-6 py-3 rounded-xl text-white font-inter">
+                                    SELECT FILES
+                                </button>
+                            </div>
+
+                            <div id="fileList" class="space-y-2 mb-6"></div>
+
+                            <button id="processButton" onclick="processFiles()" class="w-full charm-button py-4 rounded-xl text-white font-inter font-medium" disabled>
+                                ⚡ FAST PROCESS & SAVE
+                            </button>
+                        </div>
+                        
+                        <!-- Custom Table Builder -->
+                        <div id="tableBuilderSection" class="hidden">
+                            <div class="space-y-4">
+                                <div class="flex items-center space-x-4 mb-4">
+                                    <button onclick="createCustomTable()" class="charm-button px-4 py-2 rounded-lg text-white font-inter flex items-center space-x-2">
+                                        <span class="text-xl">🏗️</span>
+                                        <span>CREATE TABLE</span>
+                                    </button>
+                                    <div class="flex space-x-2">
+                                        <input type="number" id="tableRows" placeholder="Rows" min="1" max="50" value="5" class="w-20 px-3 py-2 glass-card-dark rounded-lg text-white text-center">
+                                        <span class="text-white self-center">×</span>
+                                        <input type="number" id="tableCols" placeholder="Cols" min="3" max="15" value="10" class="w-20 px-3 py-2 glass-card-dark rounded-lg text-white text-center">
+                                    </div>
+                                </div>
+                                
+                                <div id="customTableContainer" class="hidden">
+                                    <div class="mb-4 p-4 glass-card-dark rounded-lg">
+                                        <h4 class="text-white font-bold mb-2">📝 Quick Fill Student Info:</h4>
+                                        <div class="grid grid-cols-3 gap-3">
+                                            <input type="text" id="quickName" placeholder="Student Name" class="px-3 py-2 glass-card-dark rounded-lg text-white placeholder-white/50">
+                                            <input type="text" id="quickIndex" placeholder="Index Number" class="px-3 py-2 glass-card-dark rounded-lg text-white placeholder-white/50">
+                                            <input type="text" id="quickSchool" placeholder="School Name" class="px-3 py-2 glass-card-dark rounded-lg text-white placeholder-white/50">
+                                        </div>
+                                        <button onclick="fillStudentInfo()" class="mt-2 charm-button px-4 py-2 rounded-lg text-white font-inter text-sm">
+                                            📋 FILL INFO
+                                        </button>
+                                    </div>
+                                    
+                                    <div id="customTable" class="overflow-x-auto result-table rounded-xl mb-4"></div>
+                                    
+                                    <div class="flex space-x-3">
+                                        <button onclick="saveCustomTable()" class="flex-1 charm-button py-3 rounded-xl text-white font-inter font-bold">
+                                            💾 SAVE TO DATABASE
+                                        </button>
+                                        <button onclick="clearTable()" class="charm-button px-6 py-3 rounded-xl text-red-300 font-inter">
+                                            🗑️ CLEAR
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- A-Level Requirements -->
+                    <div class="glass-card rounded-3xl p-8">
+                        <h3 class="text-2xl font-inter font-bold text-white mb-6">📋 A-LEVEL REQUIREMENTS</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="p-4 glass-card-dark rounded-lg">
+                                <h4 class="text-white font-bold mb-2 flex items-center">
+                                    <span class="text-2xl mr-2">✅</span>
+                                    General Requirements
+                                </h4>
+                                <ul class="text-white/70 text-sm space-y-1">
+                                    <li>• 6 subjects passed (S or above)</li>
+                                    <li>• <strong>Mathematics (compulsory pass)</strong></li>
+                                    <li>• First Language (Sinhala/Tamil/English)</li>
+                                    <li>• 3 subjects must be C or above</li>
+                                </ul>
+                            </div>
+
+                            <div class="p-4 glass-card-dark rounded-lg">
+                                <h4 class="text-white font-bold mb-2 flex items-center">
+                                    <span class="text-2xl mr-2">🔬</span>
+                                    Science Stream
+                                </h4>
+                                <ul class="text-white/70 text-sm space-y-1">
+                                    <li>• <strong>Credit Pass (C+) in Mathematics</strong></li>
+                                    <li>• Credit Pass (C+) in Science</li>
+                                    <li>• Plus other passes to make 6 total</li>
+                                </ul>
+                            </div>
+
+                            <div class="p-4 glass-card-dark rounded-lg">
+                                <h4 class="text-white font-bold mb-2 flex items-center">
+                                    <span class="text-2xl mr-2">💼</span>
+                                    Commerce Stream
+                                </h4>
+                                <ul class="text-white/70 text-sm space-y-1">
+                                    <li>• <strong>Credit Pass (C+) in Mathematics</strong></li>
+                                    <li>• Credit Pass (C+) in Commerce/Business</li>
+                                    <li>• At least 6 passes overall</li>
+                                </ul>
+                            </div>
+
+                            <div class="p-4 glass-card-dark rounded-lg">
+                                <h4 class="text-white font-bold mb-2 flex items-center">
+                                    <span class="text-2xl mr-2">🎨</span>
+                                    Arts/Technology Stream
+                                </h4>
+                                <ul class="text-white/70 text-sm space-y-1">
+                                    <li>• At least 6 passes including Language & Maths</li>
+                                    <li>• <strong>Mathematics requirement varies by stream</strong></li>
+                                    <li>• Technology: Strong Maths/Science helps</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Processed Results -->
+                <div id="processedResults" class="mt-8 hidden">
+                    <div class="glass-card rounded-3xl p-8">
+                        <h3 class="text-2xl font-inter font-bold text-white mb-6">📊 PROCESSED RESULTS</h3>
+                        <div class="overflow-x-auto result-table rounded-xl">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-white/20">
+                                        <th class="text-left py-4 px-4 text-white font-inter">INDEX</th>
+                                        <th class="text-left py-4 px-4 text-white font-inter">NAME</th>
+                                        <th class="text-left py-4 px-4 text-white font-inter">SCHOOL</th>
+                                        <th class="text-left py-4 px-4 text-white font-inter">RESULTS</th>
+                                        <th class="text-left py-4 px-4 text-white font-inter">QUALIFICATION</th>
+                                        <th class="text-left py-4 px-4 text-white font-inter">STREAMS</th>
+                                        <th class="text-left py-4 px-4 text-white font-inter">ACTION</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsTable">
+                                    <!-- Results will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Portal -->
+    <div id="studentPortal" class="min-h-screen p-6 hidden relative z-10">
+        <!-- Student Header -->
+        <div class="fixed top-4 left-4 right-4 glass-card rounded-2xl p-4 z-40">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+                        <span class="text-xl">🎓</span>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-inter font-bold">STUDENT PORTAL V10.0</h3>
+                        <p class="text-white/60 text-sm" id="studentUserInfo">Secure Result Analysis System</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="showPortalSelection()" class="charm-button px-4 py-2 rounded-lg text-white font-inter">BACK</button>
+                    <button onclick="logout()" class="charm-button px-4 py-2 rounded-lg text-red-300 font-inter">LOGOUT</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-24 pb-20">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-5xl font-inter font-bold text-white mb-4">STUDENT RESULT PORTAL</h2>
+                    <p class="text-xl text-white/80">Search your O-Level results and get A-Level guidance</p>
+                </div>
+
+                <!-- Search Section -->
+                <div class="glass-card rounded-3xl p-8 max-w-2xl mx-auto mb-8">
+                    <h3 class="text-2xl font-inter font-bold text-white mb-6 text-center">🔍 SEARCH YOUR RESULTS</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-white/80 text-sm font-medium mb-2 font-inter">INDEX NUMBER</label>
+                            <input type="text" id="studentIndex" placeholder="Enter your index number (e.g., 2024001234)" class="w-full px-4 py-3 glass-card-dark rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all">
+                        </div>
+                        <button onclick="searchStudentResults()" class="w-full charm-button py-4 rounded-xl text-white font-inter font-bold text-lg">
+                            🔍 SEARCH RESULTS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Results Display -->
+                <div id="studentResults" class="hidden">
+                    <!-- Student Info -->
+                    <div id="studentInfo" class="glass-card rounded-3xl p-8 mb-8">
+                        <!-- Student information will be populated here -->
+                    </div>
+
+                    <!-- Subject Results -->
+                    <div class="grid lg:grid-cols-2 gap-8 mb-8">
+                        <div class="glass-card rounded-3xl p-8">
+                            <h3 class="text-2xl font-inter font-bold text-white mb-6">📚 SUBJECT RESULTS</h3>
+                            <div id="subjectResults" class="space-y-3">
+                                <!-- Subject results will be populated here -->
+                            </div>
+                        </div>
+
+                        <div class="glass-card rounded-3xl p-8">
+                            <h3 class="text-2xl font-inter font-bold text-white mb-6">📊 PERFORMANCE SUMMARY</h3>
+                            <div id="performanceSummary">
+                                <!-- Performance summary will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stream Recommendations -->
+                    <div class="glass-card rounded-3xl p-8">
+                        <h3 class="text-2xl font-inter font-bold text-white mb-6">🎯 A-LEVEL STREAM RECOMMENDATIONS</h3>
+                        <div id="streamRecommendations" class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                            <!-- Stream recommendations will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Mathematics Stream Selection Table -->
+                    <div id="mathsStreamTable" class="glass-card rounded-3xl p-8">
+                        <h3 class="text-2xl font-inter font-bold text-white mb-6 flex items-center">
+                            <span class="text-3xl mr-3">📐</span>
+                            MATHEMATICS STREAM SELECTION
+                        </h3>
+                        
+                        <div class="mb-6">
+                            <p class="text-white/80 text-lg mb-4">Choose your preferred Mathematics stream based on your O-Level performance and career goals:</p>
+                </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-white">
+                                <thead>
+                                    <tr class="bg-white/10">
+                                        <th class="px-6 py-4 text-left font-bold">Stream</th>
+                                        <th class="px-6 py-4 text-left font-bold">Required O/L Grade</th>
+                                        <th class="px-6 py-4 text-left font-bold">Subjects</th>
+                                        <th class="px-6 py-4 text-left font-bold">Career Paths</th>
+                                        <th class="px-6 py-4 text-left font-bold">Select</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-white/10">
+                                    <tr class="hover:bg-white/5 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="font-bold text-blue-300">Pure Mathematics</div>
+                                            <div class="text-sm text-white/70">Advanced Mathematics</div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="bg-green-500/20 text-green-300 px-3 py-1 rounded-full text-sm">Grade A or B</span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm space-y-1">
+                                                <div>• Pure Mathematics</div>
+                                                <div>• Applied Mathematics</div>
+                                                <div>• Physics/Chemistry</div>
+            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm space-y-1">
+                                                <div>• Engineering</div>
+                                                <div>• Actuarial Science</div>
+                                                <div>• Research</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <button onclick="selectMathsStream('Pure Mathematics')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                                                Select
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-white/5 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="font-bold text-purple-300">Mathematics + Physics</div>
+                                            <div class="text-sm text-white/70">Science Stream</div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-sm">Grade B or C</span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm space-y-1">
+                                                <div>• Mathematics</div>
+                                                <div>• Physics</div>
+                                                <div>• Chemistry</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm space-y-1">
+                                                <div>• Engineering</div>
+                                                <div>• Computer Science</div>
+                                                <div>• Architecture</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <button onclick="selectMathsStream('Mathematics + Physics')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                                                Select
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-white/5 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="font-bold text-green-300">Mathematics + Chemistry</div>
+                                            <div class="text-sm text-white/70">Science Stream</div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-sm">Grade B or C</span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm space-y-1">
+                                                <div>• Mathematics</div>
+                                                <div>• Chemistry</div>
+                                                <div>• Biology</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm space-y-1">
+                                                <div>• Medicine</div>
+                                                <div>• Pharmacy</div>
+                                                <div>• Biochemistry</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <button onclick="selectMathsStream('Mathematics + Chemistry')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                                                Select
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-white/5 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="font-bold text-yellow-300">Mathematics + Economics</div>
+                                            <div class="text-sm text-white/70">Commerce Stream</div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-full text-sm">Grade C or above</span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm space-y-1">
+                                                <div>• Mathematics</div>
+                                                <div>• Economics</div>
+                                                <div>• Business Studies</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm space-y-1">
+                                                <div>• Banking & Finance</div>
+                                                <div>• Business Management</div>
+                                                <div>• Economics</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <button onclick="selectMathsStream('Mathematics + Economics')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                                                Select
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-white/5 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="font-bold text-red-300">Mathematics + ICT</div>
+                                            <div class="text-sm text-white/70">Technology Stream</div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="bg-red-500/20 text-red-300 px-3 py-1 rounded-full text-sm">Grade C or above</span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm space-y-1">
+                                                <div>• Mathematics</div>
+                                                <div>• ICT</div>
+                                                <div>• Physics</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm space-y-1">
+                                                <div>• Software Engineering</div>
+                                                <div>• Data Science</div>
+                                                <div>• IT Management</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <button onclick="selectMathsStream('Mathematics + ICT')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                                                Select
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Selected Stream Display -->
+                        <div id="selectedMathsStream" class="mt-8 p-6 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl border border-blue-400/30 hidden">
+                            <h4 class="text-white font-bold text-lg mb-2">✅ Selected Stream:</h4>
+                            <p id="selectedStreamName" class="text-blue-300 font-bold text-xl"></p>
+                            <p class="text-white/80 text-sm mt-2">Your selection has been recorded. You can change your selection anytime.</p>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="mt-6 flex flex-wrap gap-4">
+                            <button onclick="toggleMathsStreamRequirements()" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-inter font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105">
+                                📐 View Requirements
+                            </button>
+                            <button onclick="toggleYouTubePanel()" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-inter font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105">
+                                📺 Watch Videos
+                            </button>
+                            <button onclick="toggleAIAssistant()" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-inter font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105">
+                                🤖 Get AI Guidance
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Processing Overlay -->
+    <div id="processingOverlay" class="processing-overlay hidden">
+        <div class="processing-content">
+            <div class="spinner"></div>
+            <h3 class="text-white text-xl font-inter font-bold mb-2" id="processingTitle">Processing...</h3>
+            <p class="text-white/80 text-sm mb-4" id="processingStatus">Please wait...</p>
+            <div class="w-full bg-white/20 rounded-full h-2">
+                <div id="processingProgress" class="bg-white h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let uploadedFiles = [];
+        let processedStudents = [];
+        let soundEnabled = true;
+        let aiAssistantOpen = false;
+        let youtubeOpen = false;
+        let mathsRequirementsOpen = false;
+
+        // YouTube API Configuration
+        const YOUTUBE_API_KEY = 'AIzaSyDummy_Replace_With_Real_Key'; // Replace with actual API key
+        const OPENAI_API_KEY = 'sk-dummy_Replace_With_Real_Key'; // Replace with actual API key
+
+        // Demo student database for testing
+        const DEMO_STUDENTS = [
+            {
+                indexNumber: '2024001234',
+                name: 'Nimali Silva',
+                school: 'Visakha Vidyalaya',
+                subjects: {
+                    'Mathematics': 'A',
+                    'Science': 'A', 
+                    'English': 'B',
+                    'Sinhala': 'A',
+                    'History': 'B',
+                    'Religion': 'A',
+                    'Geography': 'A',
+                    'Commerce': 'B'
+                }
+            },
+            {
+                indexNumber: '2024001235',
+                name: 'Kamal Perera',
+                school: 'Royal College',
+                subjects: {
+                    'Mathematics': 'B',
+                    'Science': 'C',
+                    'English': 'A',
+                    'Sinhala': 'B',
+                    'History': 'C',
+                    'Religion': 'B',
+                    'Geography': 'S',
+                    'Art': 'A'
+                }
+            },
+            {
+                indexNumber: '2024001236',
+                name: 'Sanduni Fernando',
+                school: 'Ladies College',
+                subjects: {
+                    'Mathematics': 'C',
+                    'Science': 'S',
+                    'English': 'A',
+                    'Tamil': 'A',
+                    'History': 'A',
+                    'Religion': 'A',
+                    'Music': 'A',
+                    'Art': 'B'
+                }
+            }
+        ];
+
+        // Sound effects
+        function playClickSound() {
+            if (!soundEnabled) return;
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.15);
+                
+                gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.15);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.15);
+            } catch (e) {
+                console.log('Audio not supported');
+            }
+        }
+
+        function playSuccessSound() {
+            if (!soundEnabled) return;
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(554, audioContext.currentTime + 0.1);
+                oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.2);
+                
+                gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (e) {
+                console.log('Audio not supported');
+            }
+        }
+
+        function playProcessingSound() {
+            if (!soundEnabled) return;
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(330, audioContext.currentTime + 2);
+                oscillator.frequency.exponentialRampToValueAtTime(220, audioContext.currentTime + 4);
+                
+                gainNode.gain.setValueAtTime(0.02, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 4);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 4);
+            } catch (e) {
+                console.log('Audio not supported');
+            }
+        }
+
+        function toggleSoundEffects() {
+            soundEnabled = !soundEnabled;
+            const soundToggle = document.getElementById('soundToggle');
+            soundToggle.innerHTML = soundEnabled ? '<span class="text-2xl">🔊</span>' : '<span class="text-2xl">🔇</span>';
+            soundToggle.title = soundEnabled ? 'Sound Effects: ON' : 'Sound Effects: OFF';
+            
+            if (soundEnabled) {
+                playSuccessSound();
+                showNotification('🔊 Sound effects enabled!', 'success');
+            } else {
+                showNotification('🔇 Sound effects disabled!', 'info');
+            }
+        }
+
+        // Authentication functions
+        function signInWithGoogle() {
+            playClickSound();
+            showProcessingOverlay('Connecting to Google...', 'Authenticating with Google Account...', 10);
+            
+            setTimeout(() => {
+                updateProcessingStatus('Verifying credentials...', 50);
+                
+                setTimeout(() => {
+                    updateProcessingStatus('Setting up user session...', 80);
+                    
+                    setTimeout(() => {
+                        hideProcessingOverlay();
+                        
+                        // Simulate Google authentication success
+                        const googleUser = {
+                            email: 'user@gmail.com',
+                            displayName: 'Google User',
+                            userType: 'student',
+                            avatar: 'https://via.placeholder.com/100/4285f4/ffffff?text=G'
+                        };
+                        
+                        currentUser = googleUser;
+                        showPortalSelection();
+                        
+                        setTimeout(() => {
+                            alert(`🎉 Google Sign-In Successful!\n\nWelcome ${googleUser.displayName}!\n\n✅ Signed in with Google Account\n📧 Email: ${googleUser.email}\n\n🚀 Features Available:\n• Fast processing system\n• Custom table builder\n• Sound effects enabled\n• Real-time database\n• AI Assistant & YouTube Videos\n\nChoose your portal to continue!`);
+                        }, 500);
+                    }, 800);
+                }, 1000);
+            }, 800);
+        }
+
+        function processLogin() {
+            playClickSound();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                alert('❌ Please enter both email/username and password');
+                return;
+            }
+            
+            // Check credentials
+            let userType = null;
+            let userName = '';
+            
+            if ((email === 'admin' || email === 'admin@school.lk') && password === 'Admin2024!') {
+                userType = 'admin';
+                userName = 'School Administrator';
+            } else if ((email === 'student' || email === 'student@school.lk') && password === 'Student123!') {
+                userType = 'student';
+                userName = 'Student User';
+            } else {
+                alert('❌ Invalid credentials!\n\nDemo Credentials:\n• Admin: admin@school.lk / Admin2024!\n• Student: student@school.lk / Student123!');
+                return;
+            }
+            
+            showProcessingOverlay('Authenticating...', 'Verifying credentials...', 30);
+            
+            setTimeout(() => {
+                updateProcessingStatus('Setting up your account...', 80);
+            }, 500);
+            
+            setTimeout(() => {
+                hideProcessingOverlay();
+                playSuccessSound();
+                
+                currentUser = {
+                    uid: userType + '-' + Date.now(),
+                    email: email,
+                    displayName: userName,
+                    userType: userType,
+                    photoURL: null
+                };
+                
+                document.getElementById('userWelcome').textContent = `Welcome, ${currentUser.displayName}!`;
+                document.getElementById('adminUserInfo').textContent = `Logged in as: ${currentUser.email}`;
+                document.getElementById('studentUserInfo').textContent = `Logged in as: ${currentUser.email}`;
+                
+                showPortalSelection();
+                
+                setTimeout(() => {
+                    alert(`🎉 Login Successful!\n\nWelcome ${userName}!\n\n✅ Access Level: ${userType.toUpperCase()}\n📧 Email: ${email}\n\n🚀 Features Available:\n• Fast processing system\n• Custom table builder\n• Sound effects enabled\n• Real-time database\n\nChoose your portal to continue!`);
+                }, 500);
+            }, 1000);
+        }
+
+        function logout() {
+            playClickSound();
+            currentUser = null;
+            uploadedFiles = [];
+            processedStudents = [];
+            
+            // Clear all displays
+            document.getElementById('fileList').innerHTML = '';
+            document.getElementById('processedResults').classList.add('hidden');
+            document.getElementById('studentResults').classList.add('hidden');
+            document.getElementById('customTableContainer').classList.add('hidden');
+            
+            showPage('home');
+            alert('👋 Successfully logged out!');
+        }
+
+        // Page navigation
+        function showPage(page) {
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('portalSelectionPage').classList.add('hidden');
+            document.getElementById('secureRegistrationPage').classList.add('hidden');
+            document.getElementById('adminPortal').classList.add('hidden');
+            document.getElementById('studentPortal').classList.add('hidden');
+            
+            if (page === 'home') {
+                document.getElementById('homePage').classList.remove('hidden');
+            }
+        }
+
+        function showSecureRegistration() {
+            document.getElementById('portalSelectionPage').classList.add('hidden');
+            document.getElementById('adminPortal').classList.add('hidden');
+            document.getElementById('studentPortal').classList.add('hidden');
+            document.getElementById('secureRegistrationPage').classList.remove('hidden');
+        }
+
+        function showPortalSelection() {
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('secureRegistrationPage').classList.add('hidden');
+            document.getElementById('adminPortal').classList.add('hidden');
+            document.getElementById('studentPortal').classList.add('hidden');
+            document.getElementById('portalSelectionPage').classList.remove('hidden');
+        }
+
+        // Global variable to store generated credentials
+        let generatedCredentials = null;
+
+        // Generate secure credentials
+        function generateCredentials() {
+            playClickSound();
+            
+            const schoolName = document.getElementById('schoolName').value.trim();
+            const schoolAddress = document.getElementById('schoolAddress').value.trim();
+            
+            if (!schoolName || !schoolAddress) {
+                alert('❌ Please fill in at least School Name and Address to generate credentials!');
+                return;
+            }
+            
+            showProcessingOverlay('Generating Credentials...', 'Creating secure login credentials...', 20);
+            
+            setTimeout(() => {
+                updateProcessingStatus('Encrypting data...', 50);
+            }, 500);
+            
+            setTimeout(() => {
+                updateProcessingStatus('Finalizing credentials...', 80);
+                
+                // Generate secure credentials based on school info
+                const schoolCode = generateSchoolCode(schoolName);
+                const timestamp = Date.now().toString().slice(-6);
+                
+                const adminUsername = `admin_${schoolCode}`;
+                const adminPassword = generateSecurePassword(schoolName, 'admin');
+                
+                const studentUsername = `student_${schoolCode}`;
+                const studentPassword = generateSecurePassword(schoolName, 'student');
+                
+                generatedCredentials = {
+                    school: {
+                        name: schoolName,
+                        address: schoolAddress,
+                        district: document.getElementById('schoolDistrict').value,
+                        type: document.getElementById('schoolType').value,
+                        phone: document.getElementById('schoolPhone').value,
+                        email: document.getElementById('schoolEmail').value,
+                        principal: document.getElementById('principalName').value
+                    },
+                    admin: {
+                        username: adminUsername,
+                        password: adminPassword
+                    },
+                    student: {
+                        username: studentUsername,
+                        password: studentPassword
+                    },
+                    generated: new Date().toLocaleString()
+                };
+                
+                // Display credentials
+                document.getElementById('adminUsername').textContent = adminUsername;
+                document.getElementById('adminPassword').textContent = adminPassword;
+                document.getElementById('studentUsername').textContent = studentUsername;
+                document.getElementById('studentPassword').textContent = studentPassword;
+                
+                document.getElementById('credentialsPlaceholder').classList.add('hidden');
+                document.getElementById('credentialsDisplay').classList.remove('hidden');
+                
+            }, 1000);
+            
+            setTimeout(() => {
+                hideProcessingOverlay();
+                playSuccessSound();
+                alert(`✅ Secure Credentials Generated Successfully!\n\n🏫 School: ${schoolName}\n\n👨‍💼 ADMIN ACCESS:\nUsername: ${generatedCredentials.admin.username}\nPassword: ${generatedCredentials.admin.password}\n\n🎓 STUDENT ACCESS:\nUsername: ${generatedCredentials.student.username}\nPassword: ${generatedCredentials.student.password}\n\n🔒 These credentials are unique to your school and provide secure access to the system.\n\n💡 You can now copy, download, or proceed to the admin portal!`);
+            }, 1500);
+        }
+
+        // Generate school code from name
+        function generateSchoolCode(schoolName) {
+            const words = schoolName.toUpperCase().split(' ');
+            let code = '';
+            
+            // Take first 2 letters of each word, max 6 letters
+            for (let i = 0; i < Math.min(words.length, 3); i++) {
+                if (words[i].length >= 2) {
+                    code += words[i].substring(0, 2);
+                } else if (words[i].length === 1) {
+                    code += words[i];
+                }
+            }
+            
+            // Add random numbers if code is too short
+            while (code.length < 4) {
+                code += Math.floor(Math.random() * 10);
+            }
+            
+            return code.substring(0, 6);
+        }
+
+        // Generate secure password
+        function generateSecurePassword(schoolName, userType) {
+            const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+            const symbols = '@#$%&*';
+            
+            let password = '';
+            
+            // Add school initial
+            password += schoolName.charAt(0).toUpperCase();
+            
+            // Add user type indicator
+            password += userType === 'admin' ? 'A' : 'S';
+            
+            // Add random characters
+            for (let i = 0; i < 6; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            
+            // Add a symbol
+            password += symbols.charAt(Math.floor(Math.random() * symbols.length));
+            
+            // Add numbers
+            password += Math.floor(Math.random() * 100).toString().padStart(2, '0');
+            
+            return password;
+        }
+
+        // Copy credentials to clipboard
+        function copyCredentials(type) {
+            playClickSound();
+            
+            if (!generatedCredentials) {
+                alert('❌ No credentials to copy!');
+                return;
+            }
+            
+            let textToCopy = '';
+            
+            if (type === 'admin') {
+                textToCopy = `ADMIN CREDENTIALS\nSchool: ${generatedCredentials.school.name}\nUsername: ${generatedCredentials.admin.username}\nPassword: ${generatedCredentials.admin.password}`;
+            } else {
+                textToCopy = `STUDENT CREDENTIALS\nSchool: ${generatedCredentials.school.name}\nUsername: ${generatedCredentials.student.username}\nPassword: ${generatedCredentials.student.password}`;
+            }
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                playSuccessSound();
+                alert(`✅ ${type.toUpperCase()} credentials copied to clipboard!`);
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = textToCopy;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                playSuccessSound();
+                alert(`✅ ${type.toUpperCase()} credentials copied to clipboard!`);
+            });
+        }
+
+        // Download credentials as text file
+        function downloadCredentials() {
+            playClickSound();
+            
+            if (!generatedCredentials) {
+                alert('❌ No credentials to download!');
+                return;
+            }
+            
+            const content = `
+OL ANALYZER V10.0 - SECURE SCHOOL CREDENTIALS
+=============================================
+
+SCHOOL INFORMATION:
+Name: ${generatedCredentials.school.name}
+Address: ${generatedCredentials.school.address}
+District: ${generatedCredentials.school.district || 'Not specified'}
+Type: ${generatedCredentials.school.type || 'Not specified'}
+Phone: ${generatedCredentials.school.phone || 'Not specified'}
+Email: ${generatedCredentials.school.email || 'Not specified'}
+Principal: ${generatedCredentials.school.principal || 'Not specified'}
+
+ADMIN CREDENTIALS:
+Username: ${generatedCredentials.admin.username}
+Password: ${generatedCredentials.admin.password}
+
+STUDENT CREDENTIALS:
+Username: ${generatedCredentials.student.username}
+Password: ${generatedCredentials.student.password}
+
+SECURITY NOTES:
+- Store these credentials securely
+- Do not share with unauthorized persons
+- Change passwords regularly for enhanced security
+- Use admin credentials for data management
+- Use student credentials for result viewing
+
+Generated: ${generatedCredentials.generated}
+System: OL Analyzer V10.0 - Secure School Registration Edition
+            `.trim();
+            
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${generatedCredentials.school.name.replace(/[^a-zA-Z0-9]/g, '_')}_Credentials.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            playSuccessSound();
+            alert('✅ Credentials downloaded successfully!\n\nThe file contains all your login details and school information. Keep it safe!');
+        }
+
+        // Proceed to admin portal with generated credentials
+        function proceedToAdmin() {
+            playClickSound();
+            
+            if (!generatedCredentials) {
+                alert('❌ Please generate credentials first!');
+                return;
+            }
+            
+            // Update current user with generated credentials
+            currentUser.generatedCredentials = generatedCredentials;
+            
+            // Show admin portal
+            document.getElementById('secureRegistrationPage').classList.add('hidden');
+            document.getElementById('adminPortal').classList.remove('hidden');
+            setupFileUpload();
+            
+            playSuccessSound();
+            alert(`🚀 Welcome to Admin Portal!\n\n🏫 School: ${generatedCredentials.school.name}\n👨‍💼 Admin Access Granted\n\n✅ You can now:\n• Upload and process O-Level results\n• Create custom data tables\n• Manage student information\n• Generate qualification reports\n\nYour secure credentials are ready for use!`);
+        }
+
+        function showAdminPortal() {
+            playClickSound();
+            if (!currentUser) {
+                alert('❌ Please login first!');
+                return;
+            }
+            
+            // Show secure registration page first for admin
+            showSecureRegistration();
+        }
+
+        function showStudentPortal() {
+            playClickSound();
+            if (!currentUser) {
+                alert('❌ Please login first!');
+                return;
+            }
+            
+            // Direct access to student portal - no additional login needed
+            document.getElementById('portalSelectionPage').classList.add('hidden');
+            document.getElementById('studentPortal').classList.remove('hidden');
+            
+            // Show floating tabs
+            document.getElementById('floatingTabs').style.display = 'flex';
+            
+            // Load A-Level videos automatically
+            loadALevelVideos();
+            
+            playSuccessSound();
+            alert(`✅ Student Portal Access Granted!\n\nWelcome ${currentUser.displayName}!\n\n🆕 NEW FEATURES:\n• 🤖 AI Assistant for study guidance\n• 📺 YouTube educational videos\n• 🔊 Calm processing sounds\n• 📱 Floating tabs interface\n\n🎓 You can now:\n• Search your O-Level results\n• Get A-Level stream recommendations\n• Chat with AI assistant\n• Watch educational videos\n• Access career guidance\n\nEnter your index number to search results!`);
+        }
+
+        // Floating tabs functions
+        function toggleAIAssistant() {
+            playClickSound();
+            aiAssistantOpen = !aiAssistantOpen;
+            const panel = document.getElementById('aiAssistantPanel');
+            
+            if (aiAssistantOpen) {
+                panel.classList.add('open');
+                if (youtubeOpen) {
+                    toggleYouTubePanel(); // Close YouTube if open
+                }
+                if (mathsRequirementsOpen) {
+                    toggleMathsStreamRequirements(); // Close maths requirements if open
+                }
+            } else {
+                panel.classList.remove('open');
+            }
+        }
+
+        function toggleYouTubePanel() {
+            playClickSound();
+            youtubeOpen = !youtubeOpen;
+            const panel = document.getElementById('youtubePanel');
+            
+            if (youtubeOpen) {
+                panel.classList.add('open');
+                if (aiAssistantOpen) {
+                    toggleAIAssistant(); // Close AI if open
+                }
+                if (mathsRequirementsOpen) {
+                    toggleMathsStreamRequirements(); // Close maths requirements if open
+                }
+            } else {
+                panel.classList.remove('open');
+            }
+        }
+
+        function toggleMathsStreamRequirements() {
+            playClickSound();
+            mathsRequirementsOpen = !mathsRequirementsOpen;
+            const panel = document.getElementById('mathsRequirementsPanel');
+            
+            if (mathsRequirementsOpen) {
+                panel.classList.add('open');
+                if (aiAssistantOpen) {
+                    toggleAIAssistant(); // Close AI if open
+                }
+                if (youtubeOpen) {
+                    toggleYouTubePanel(); // Close YouTube if open
+                }
+            } else {
+                panel.classList.remove('open');
+            }
+        }
+
+        function showMathsStreamTable() {
+            playClickSound();
+            // Close the requirements panel first
+            toggleMathsStreamRequirements();
+            
+            // Show the student portal with maths stream table
+            if (currentUser && currentUser.userType === 'student') {
+                showStudentPortal();
+                // Scroll to or highlight the maths stream table section
+                setTimeout(() => {
+                    const mathsTableSection = document.getElementById('mathsStreamTable');
+                    if (mathsTableSection) {
+                        mathsTableSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 500);
+            } else {
+                alert('Please login as a student to view the Maths Stream Selection Table.');
+            }
+        }
+
+        function selectMathsStream(streamName) {
+            playClickSound();
+            
+            // Show the selected stream display
+            const selectedDisplay = document.getElementById('selectedMathsStream');
+            const selectedName = document.getElementById('selectedStreamName');
+            
+            selectedName.textContent = streamName;
+            selectedDisplay.classList.remove('hidden');
+            
+            // Scroll to the selected display
+            selectedDisplay.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Show success notification
+            showNotification(`✅ ${streamName} stream selected successfully!`, 'success');
+            
+            // Store the selection (you can extend this to save to localStorage or send to server)
+            if (currentUser) {
+                currentUser.selectedMathsStream = streamName;
+                localStorage.setItem('selectedMathsStream', streamName);
+            }
+            
+            // Provide additional guidance based on selection
+            setTimeout(() => {
+                let guidanceMessage = '';
+                switch(streamName) {
+                    case 'Pure Mathematics':
+                        guidanceMessage = '🎯 Excellent choice! Pure Mathematics opens doors to advanced research, actuarial science, and engineering. Make sure you have strong analytical skills!';
+                        break;
+                    case 'Mathematics + Physics':
+                        guidanceMessage = '⚡ Great selection! This combination is perfect for engineering, computer science, and physics-related careers. Focus on problem-solving skills!';
+                        break;
+                    case 'Mathematics + Chemistry':
+                        guidanceMessage = '🧪 Perfect for aspiring doctors, pharmacists, and chemists! This stream provides a strong foundation for medical and chemical sciences.';
+                        break;
+                    case 'Mathematics + Economics':
+                        guidanceMessage = '💰 Excellent for business, finance, and economics careers! This combination develops analytical and business thinking skills.';
+                        break;
+                    case 'Mathematics + ICT':
+                        guidanceMessage = '💻 Perfect choice for the digital age! This stream prepares you for software engineering, data science, and IT management roles.';
+                        break;
+                    default:
+                        guidanceMessage = '🎓 Your selection has been recorded. Consider your career goals and interests when making your final decision.';
+                }
+                
+                showNotification(guidanceMessage, 'info');
+            }, 1000);
+        }
+
+        // AI Assistant functions
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            playClickSound();
+            
+            // Add user message
+            addChatMessage(message, 'user');
+            input.value = '';
+            
+            // Show typing indicator
+            addChatMessage('🤖 Thinking...', 'ai', true);
+            
+            try {
+                // Simulate AI response (replace with actual OpenAI API call)
+                const response = await getAIResponse(message);
+                
+                // Remove typing indicator
+                const messages = document.getElementById('chatMessages');
+                messages.removeChild(messages.lastChild);
+                
+                // Add AI response
+                addChatMessage(response, 'ai');
+                
+                // If message is about videos, suggest YouTube search
+                if (message.toLowerCase().includes('video') || message.toLowerCase().includes('watch') || message.toLowerCase().includes('tutorial')) {
+                    setTimeout(() => {
+                        addChatMessage('📺 I can also show you relevant YouTube videos! Click the video tab or ask me to search for specific topics.', 'ai');
+                    }, 1000);
+                }
+                
+            } catch (error) {
+                // Remove typing indicator
+                const messages = document.getElementById('chatMessages');
+                messages.removeChild(messages.lastChild);
+                
+                addChatMessage('❌ Sorry, I encountered an error. Please try again later.', 'ai');
+            }
+        }
+
+        function addChatMessage(message, sender, isTyping = false) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${sender}`;
+            
+            if (isTyping) {
+                messageDiv.id = 'typing-indicator';
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="text-white text-sm">${message}</div>
+                <div class="text-white/50 text-xs mt-1">${new Date().toLocaleTimeString()}</div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        async function getAIResponse(message) {
+            // Simulate AI response with educational content
+            const responses = {
+                'science': '🔬 Science stream is great for students with strong Math and Science grades! You can pursue Medicine, Engineering, or Research. Key subjects include Physics, Chemistry, Biology, and Combined Mathematics.',
+                'commerce': '💼 Commerce stream is perfect for business-minded students! You need good Math and Commerce grades. Career paths include Banking, Finance, Management, and Accounting.',
+                'arts': '🎨 Arts stream offers diverse opportunities! You can study Literature, History, Geography, and Languages. Career options include Teaching, Law, Journalism, and Social Work.',
+                'technology': '⚙️ Technology stream combines engineering with practical skills! You need good Math grades. Leads to careers in Engineering, IT, Manufacturing, and Construction.',
+                'math': '📊 Mathematics is crucial for A-Levels! You need at least a Credit pass (C or above) for Science and Commerce streams. Practice regularly and seek help when needed.',
+                'university': '🎓 University admission depends on your A-Level results and Z-score. Different courses have different requirements. Plan early and choose subjects wisely!',
+                'career': '💼 Career guidance depends on your interests and strengths. Consider your O-Level results, preferred subjects, and future goals. I can help you explore options!',
+                'study': '📚 Effective study tips: Create a schedule, practice past papers, form study groups, take breaks, and stay organized. Consistency is key!'
+            };
+            
+            // Simple keyword matching
+            const lowerMessage = message.toLowerCase();
+            for (const [keyword, response] of Object.entries(responses)) {
+                if (lowerMessage.includes(keyword)) {
+                    return response;
+                }
+            }
+            
+            // Default response
+            return `🤖 I understand you're asking about "${message}". As your AI study assistant, I can help with A-Level subject selection, career guidance, study tips, and university requirements. Could you be more specific about what you'd like to know?`;
+        }
+
+        // YouTube integration
+        async function loadALevelVideos() {
+            const videoContainer = document.getElementById('videoContainer');
+            
+            // Educational A-Level videos focusing on motivation and stream explanations
+            const educationalVideos = [
+                {
+                    id: '9vKqVkMQHK4',
+                    title: '🎯 A-Level Stream Selection Guide - Choose Your Future',
+                    thumbnail: 'https://img.youtube.com/vi/9vKqVkMQHK4/mqdefault.jpg',
+                    channel: 'AL Education Hub',
+                    category: 'Motivation & Guidance'
+                },
+                {
+                    id: 'WUvTyaaNkzM',
+                    title: '🚀 How to Excel in A-Level Mathematics - Complete Guide',
+                    thumbnail: 'https://img.youtube.com/vi/WUvTyaaNkzM/mqdefault.jpg',
+                    channel: 'Khan Academy',
+                    category: 'Mathematics'
+                },
+                {
+                    id: 'dQw4w9WgXcQ',
+                    title: '⚡ Physics A-Level: From O-Level to Success',
+                    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+                    channel: '3Blue1Brown',
+                    category: 'Physics'
+                },
+                {
+                    id: 'UCc8QzqWx',
+                    title: '🧪 Chemistry A-Level Stream - Your Path to Medicine',
+                    thumbnail: 'https://img.youtube.com/vi/UCc8QzqWx/mqdefault.jpg',
+                    channel: 'Organic Chemistry Tutor',
+                    category: 'Chemistry'
+                },
+                {
+                    id: 'fNk_zzaMoSs',
+                    title: '🧬 Biology A-Level: Understanding Life Sciences',
+                    thumbnail: 'https://img.youtube.com/vi/fNk_zzaMoSs/mqdefault.jpg',
+                    channel: 'CrashCourse',
+                    category: 'Biology'
+                },
+                {
+                    id: 'Vd6Qk8EeJ5Y',
+                    title: '💡 A-Level Economics: Business & Finance Stream',
+                    thumbnail: 'https://img.youtube.com/vi/Vd6Qk8EeJ5Y/mqdefault.jpg',
+                    channel: 'Economics Explained',
+                    category: 'Economics'
+                },
+                {
+                    id: 'eIrMbAQSU34',
+                    title: '🎭 English Literature A-Level - Arts Stream',
+                    thumbnail: 'https://img.youtube.com/vi/eIrMbAQSU34/mqdefault.jpg',
+                    channel: 'TED-Ed',
+                    category: 'Literature'
+                },
+                {
+                    id: 'Qc7Xm1gX8w',
+                    title: '🌟 A-Level Success Stories - Student Motivational Stories',
+                    thumbnail: 'https://img.youtube.com/vi/Qc7Xm1gX8w/mqdefault.jpg',
+                    channel: 'AL Success Stories',
+                    category: 'Motivation'
+                },
+                {
+                    id: 'FmTsS5xQP6w',
+                    title: '🎓 University Requirements - A-Level Streams Explained',
+                    thumbnail: 'https://img.youtube.com/vi/FmTsS5xQP6w/mqdefault.jpg',
+                    channel: 'University Guide',
+                    category: 'Career Guidance'
+                }
+            ];
+            
+            videoContainer.innerHTML = '';
+            
+            educationalVideos.forEach(video => {
+                const videoCard = document.createElement('div');
+                videoCard.className = 'video-card';
+                videoCard.onclick = () => openVideo(video.id);
+                
+                videoCard.innerHTML = `
+                    <img src="${video.thumbnail}" alt="${video.title}" class="w-full h-32 object-cover">
+                    <div class="p-3">
+                        <h4 class="text-white font-bold text-sm mb-1">${video.title}</h4>
+                        <p class="text-white/60 text-xs mb-1">${video.channel}</p>
+                        <span class="inline-block bg-blue-500/30 text-blue-300 text-xs px-2 py-1 rounded-full">${video.category}</span>
+                    </div>
+                `;
+                
+                videoContainer.appendChild(videoCard);
+            });
+        }
+
+        function openVideo(videoId) {
+            playClickSound();
+            window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+        }
+
+        // Notification system
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-lg text-white font-inter text-sm transition-all duration-300`;
+            
+            switch (type) {
+                case 'success':
+                    notification.classList.add('bg-green-500');
+                    break;
+                case 'error':
+                    notification.classList.add('bg-red-500');
+                    break;
+                case 'warning':
+                    notification.classList.add('bg-yellow-500');
+                    break;
+                default:
+                    notification.classList.add('bg-blue-500');
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translate(-50%, -100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+
+
+        // File upload and table functions
+        function showFileUpload() {
+            playClickSound();
+            document.getElementById('fileUploadSection').classList.remove('hidden');
+            document.getElementById('tableBuilderSection').classList.add('hidden');
+        }
+
+        function showTableBuilder() {
+            playClickSound();
+            document.getElementById('fileUploadSection').classList.add('hidden');
+            document.getElementById('tableBuilderSection').classList.remove('hidden');
+        }
+
+        function createCustomTable() {
+            playClickSound();
+            const rows = parseInt(document.getElementById('tableRows').value) || 5;
+            const cols = parseInt(document.getElementById('tableCols').value) || 10;
+            
+            const tableContainer = document.getElementById('customTable');
+            const container = document.getElementById('customTableContainer');
+            
+            // Create table with headers
+            let tableHTML = '<table class="custom-table w-full text-white">';
+            
+            // Header row
+            tableHTML += '<thead><tr>';
+            const headers = ['Index Number', 'Student Name', 'School', 'Mathematics', 'Science', 'English', 'Sinhala/Tamil', 'History', 'Religion', 'Geography', 'Commerce', 'Art', 'Music', 'ICT', 'Other'];
+            for (let j = 0; j < Math.min(cols, headers.length); j++) {
+                tableHTML += `<th class="p-2 bg-white/10">${headers[j]}</th>`;
+            }
+            tableHTML += '</tr></thead>';
+            
+            // Data rows
+            tableHTML += '<tbody>';
+            for (let i = 0; i < rows; i++) {
+                tableHTML += '<tr>';
+                for (let j = 0; j < cols; j++) {
+                    tableHTML += `<td><input type="text" id="cell_${i}_${j}" placeholder="${j === 0 ? '2024...' : j === 1 ? 'Name' : j === 2 ? 'School' : 'Grade'}" class="w-full"></td>`;
+                }
+                tableHTML += '</tr>';
+            }
+            tableHTML += '</tbody></table>';
+            
+            tableContainer.innerHTML = tableHTML;
+            container.classList.remove('hidden');
+            
+            playSuccessSound();
+            alert(`✅ Custom table created!\n\n📊 Size: ${rows} rows × ${cols} columns\n📝 Ready for data entry\n\n💡 Tip: Use the Quick Fill feature for faster data entry!`);
+        }
+
+        function fillStudentInfo() {
+            playClickSound();
+            const name = document.getElementById('quickName').value.trim();
+            const index = document.getElementById('quickIndex').value.trim();
+            const school = document.getElementById('quickSchool').value.trim();
+            
+            if (!name || !index || !school) {
+                alert('❌ Please fill all student info fields');
+                return;
+            }
+            
+            // Find first empty row
+            let filled = false;
+            for (let i = 0; i < 50; i++) {
+                const indexCell = document.getElementById(`cell_${i}_0`);
+                const nameCell = document.getElementById(`cell_${i}_1`);
+                const schoolCell = document.getElementById(`cell_${i}_2`);
+                
+                if (indexCell && nameCell && schoolCell && !indexCell.value) {
+                    indexCell.value = index;
+                    nameCell.value = name;
+                    schoolCell.value = school;
+                    filled = true;
+                    break;
+                }
+            }
+            
+            if (filled) {
+                playSuccessSound();
+                // Clear quick fill fields
+                document.getElementById('quickName').value = '';
+                document.getElementById('quickIndex').value = '';
+                document.getElementById('quickSchool').value = '';
+                alert('✅ Student info filled successfully!');
+            } else {
+                alert('❌ No empty rows available');
+            }
+        }
+
+        function saveCustomTable() {
+            playClickSound();
+            showProcessingOverlay('Saving Data...', 'Processing table data...', 20);
+            
+            const students = [];
+            
+            // Extract data from table
+            for (let i = 0; i < 50; i++) {
+                const indexCell = document.getElementById(`cell_${i}_0`);
+                const nameCell = document.getElementById(`cell_${i}_1`);
+                const schoolCell = document.getElementById(`cell_${i}_2`);
+                
+                if (indexCell && nameCell && schoolCell && indexCell.value && nameCell.value) {
+                    const student = {
+                        indexNumber: indexCell.value,
+                        name: nameCell.value,
+                        school: schoolCell.value || 'Unknown School',
+                        subjects: {}
+                    };
+                    
+                    // Get subject grades
+                    const subjects = ['Mathematics', 'Science', 'English', 'Sinhala', 'History', 'Religion', 'Geography', 'Commerce', 'Art', 'Music', 'ICT', 'Other'];
+                    for (let j = 3; j < 15; j++) {
+                        const gradeCell = document.getElementById(`cell_${i}_${j}`);
+                        if (gradeCell && gradeCell.value && subjects[j-3]) {
+                            student.subjects[subjects[j-3]] = gradeCell.value.toUpperCase();
+                        }
+                    }
+                    
+                    students.push(student);
+                }
+            }
+            
+            setTimeout(() => {
+                updateProcessingStatus('Analyzing qualifications...', 60);
+            }, 500);
+            
+            setTimeout(() => {
+                updateProcessingStatus('Saving to database...', 90);
+                processedStudents = students;
+            }, 1000);
+            
+            setTimeout(() => {
+                hideProcessingOverlay();
+                playSuccessSound();
+                displayProcessedResults();
+                alert(`✅ Table data saved successfully!\n\n📊 Results:\n• ${students.length} student records processed\n• A-Level qualification analysis complete\n• Stream recommendations generated\n\nView results below!`);
+            }, 1500);
+        }
+
+        function clearTable() {
+            playClickSound();
+            if (confirm('🗑️ Are you sure you want to clear the table?')) {
+                document.getElementById('customTable').innerHTML = '';
+                document.getElementById('customTableContainer').classList.add('hidden');
+                playSuccessSound();
+                alert('✅ Table cleared successfully!');
+            }
+        }
+
+        // File upload setup
+        function setupFileUpload() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('adminFileInput');
+
+            if (!dropZone || !fileInput) return;
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                const files = Array.from(e.dataTransfer.files);
+                handleFiles(files);
+            });
+
+            dropZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const files = Array.from(e.target.files);
+                handleFiles(files);
+            });
+        }
+
+        // Handle uploaded files
+        function handleFiles(files) {
+            playClickSound();
+            files.forEach(file => {
+                if (validateFile(file)) {
+                    uploadedFiles.push(file);
+                    displayFile(file);
+                }
+            });
+            
+            // Enable process button
+            const processButton = document.getElementById('processButton');
+            if (uploadedFiles.length > 0) {
+                processButton.disabled = false;
+                processButton.classList.remove('opacity-50');
+            }
+        }
+
+        // Validate file
+        function validateFile(file) {
+            const allowedTypes = [
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-excel',
+                'text/csv'
+            ];
+
+            if (!allowedTypes.includes(file.type)) {
+                alert(`❌ Unsupported file type: ${file.name}\nSupported: XLSX, XLS, CSV`);
+                return false;
+            }
+
+            if (file.size > 50 * 1024 * 1024) {
+                alert(`❌ File too large: ${file.name}\nMaximum size: 50MB`);
+                return false;
+            }
+
+            return true;
+        }
+
+        // Display file in list
+        function displayFile(file) {
+            const fileList = document.getElementById('fileList');
+            const fileItem = document.createElement('div');
+            fileItem.className = 'flex items-center justify-between p-3 glass-card-dark rounded-lg';
+            
+            const fileIcon = getFileIcon(file.type);
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
+            
+            fileItem.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl">${fileIcon}</span>
+                    <div>
+                        <p class="text-white font-medium text-sm">${file.name}</p>
+                        <p class="text-white/60 text-xs">${fileSize} MB</p>
+                    </div>
+                </div>
+                <button onclick="removeFile('${file.name}')" class="text-red-400 hover:text-red-300 text-sm">Remove</button>
+            `;
+            
+            fileList.appendChild(fileItem);
+        }
+
+        // Get file icon
+        function getFileIcon(fileType) {
+            if (fileType.includes('spreadsheet') || fileType.includes('excel')) return '📊';
+            if (fileType.includes('csv')) return '📋';
+            return '📄';
+        }
+
+        // Remove file
+        function removeFile(fileName) {
+            playClickSound();
+            uploadedFiles = uploadedFiles.filter(file => file.name !== fileName);
+            updateFileList();
+            
+            if (uploadedFiles.length === 0) {
+                document.getElementById('processButton').disabled = true;
+                document.getElementById('processButton').classList.add('opacity-50');
+            }
+        }
+
+        // Update file list
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            uploadedFiles.forEach(file => displayFile(file));
+        }
+
+        // Fast process files
+        async function processFiles() {
+            playClickSound();
+            if (uploadedFiles.length === 0) {
+                alert('Please select files to upload!');
+                return;
+            }
+
+            showProcessingOverlay('Fast Processing...', 'Initializing fast processing system...', 0);
+            
+            processedStudents = [];
+            
+            for (let i = 0; i < uploadedFiles.length; i++) {
+                const file = uploadedFiles[i];
+                const progress = ((i + 1) / uploadedFiles.length) * 80;
+                
+                updateProcessingStatus(`Processing ${file.name}...`, progress);
+                
+                try {
+                    const students = await processFile(file);
+                    processedStudents.push(...students);
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                }
+            }
+            
+            // Fast save to database
+            updateProcessingStatus('Saving to database...', 95);
+            await new Promise(resolve => setTimeout(resolve, 200)); // Fast save simulation
+            
+            hideProcessingOverlay();
+            playSuccessSound();
+            
+            // Show results
+            displayProcessedResults();
+            
+            alert(`✅ Fast Processing Complete!\n\n📊 Results:\n• ${processedStudents.length} student records processed\n• Lightning-fast data processing\n• Accurate A-Level qualification assessment\n• Stream recommendations generated\n• Data saved to database\n\nView detailed results below!`);
+        }
+
+        // Process individual file (fast version)
+        async function processFile(file) {
+            if (file.type.includes('csv')) {
+                return await processCSVFile(file);
+            } else if (file.type.includes('excel') || file.type.includes('spreadsheet')) {
+                return await processExcelFile(file);
+            }
+            return [];
+        }
+
+        // Process CSV file
+        function processCSVFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const csv = e.target.result;
+                        const results = Papa.parse(csv, { header: true, skipEmptyLines: true });
+                        const students = parseStudentData(results.data);
+                        resolve(students);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('Failed to read CSV file'));
+                reader.readAsText(file);
+            });
+        }
+
+        // Process Excel file
+        function processExcelFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        
+                        if (jsonData.length > 1) {
+                            const headers = jsonData[0];
+                            const rows = jsonData.slice(1);
+                            const objects = rows.map(row => {
+                                const obj = {};
+                                headers.forEach((header, index) => {
+                                    obj[header] = row[index] || '';
+                                });
+                                return obj;
+                            });
+                            
+                            const students = parseStudentData(objects);
+                            resolve(students);
+                        } else {
+                            resolve([]);
+                        }
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('Failed to read Excel file'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Parse student data
+        function parseStudentData(data) {
+            const students = [];
+            
+            data.forEach(row => {
+                const indexNumber = row['Index Number'] || row['Index'] || row['Student Index'] || '';
+                const studentName = row['Student Name'] || row['Name'] || row['Full Name'] || '';
+                const school = row['School'] || row['School Name'] || row['Institution'] || '';
+                
+                if (indexNumber && studentName) {
+                    const student = {
+                        indexNumber: indexNumber.toString(),
+                        name: studentName,
+                        school: school,
+                        subjects: {}
+                    };
+                    
+                    // Extract subject grades
+                    const subjects = ['Mathematics', 'Science', 'English', 'Sinhala', 'Tamil', 'History', 'Religion', 'Geography', 'Commerce', 'Art', 'Music'];
+                    
+                    subjects.forEach(subject => {
+                        if (row[subject]) {
+                            student.subjects[subject] = row[subject].toString().toUpperCase();
+                        }
+                    });
+                    
+                    students.push(student);
+                }
+            });
+            
+            return students;
+        }
+
+        // Analyze student for A-Level qualification
+        function analyzeStudent(student) {
+            const subjects = student.subjects;
+            const grades = Object.values(subjects);
+            
+            // Count grades
+            const gradeA = grades.filter(g => g === 'A').length;
+            const gradeB = grades.filter(g => g === 'B').length;
+            const gradeC = grades.filter(g => g === 'C').length;
+            const gradeS = grades.filter(g => g === 'S').length;
+            const gradeW = grades.filter(g => g === 'W').length;
+            
+            // Calculate passes and credits
+            const totalPasses = gradeA + gradeB + gradeC + gradeS;
+            const totalCredits = gradeA + gradeB + gradeC;
+            
+            // Check general qualification (6 passes, 3 credits, Math pass, Language pass)
+            const mathPass = subjects['Mathematics'] && ['A', 'B', 'C', 'S'].includes(subjects['Mathematics']);
+            const languagePass = (subjects['Sinhala'] && ['A', 'B', 'C', 'S'].includes(subjects['Sinhala'])) ||
+                                (subjects['Tamil'] && ['A', 'B', 'C', 'S'].includes(subjects['Tamil'])) ||
+                                (subjects['English'] && ['A', 'B', 'C', 'S'].includes(subjects['English']));
+            
+            const generalQualified = totalPasses >= 6 && totalCredits >= 3 && mathPass && languagePass;
+            
+            // Check stream qualifications
+            const streams = checkStreamQualifications(subjects, generalQualified);
+            
+            return {
+                gradeA,
+                gradeB,
+                gradeC,
+                gradeS,
+                gradeW,
+                totalPasses,
+                totalCredits,
+                generalQualified,
+                qualificationStatus: generalQualified ? 'A-Level Qualified' : 'Not Qualified',
+                streams
+            };
+        }
+
+        // Check stream qualifications
+        function checkStreamQualifications(subjects, generalQualified) {
+            if (!generalQualified) {
+                return {
+                    science: { qualified: false, reason: 'General requirements not met' },
+                    commerce: { qualified: false, reason: 'General requirements not met' },
+                    arts: { qualified: false, reason: 'General requirements not met' },
+                    technology: { qualified: false, reason: 'General requirements not met' },
+                    mathematics: { qualified: false, reason: 'General requirements not met' }
+                };
+            }
+            
+            const mathCredit = subjects['Mathematics'] && ['A', 'B', 'C'].includes(subjects['Mathematics']);
+            const scienceCredit = subjects['Science'] && ['A', 'B', 'C'].includes(subjects['Science']);
+            const commerceCredit = (subjects['Commerce'] && ['A', 'B', 'C'].includes(subjects['Commerce'])) ||
+                                 (subjects['Business Studies'] && ['A', 'B', 'C'].includes(subjects['Business Studies']));
+            const englishCredit = subjects['English'] && ['A', 'B', 'C'].includes(subjects['English']);
+            
+            // Mathematics stream requirements: Credit pass (C) or above in Mathematics is compulsory
+            const mathematicsQualified = mathCredit;
+            let mathematicsReason = '';
+            
+            if (mathematicsQualified) {
+                mathematicsReason = 'Qualified - Credit pass (C) or above in Mathematics obtained';
+            } else {
+                mathematicsReason = 'Need Credit pass (C) or above in Mathematics (compulsory)';
+            }
+            
+            return {
+                science: {
+                    qualified: mathCredit && scienceCredit,
+                    reason: mathCredit && scienceCredit ? 'Qualified - Math & Science Credits' : 'Need Credit passes in Math & Science'
+                },
+                commerce: {
+                    qualified: mathCredit && commerceCredit,
+                    reason: mathCredit && commerceCredit ? 'Qualified - Math & Commerce Credits' : 'Need Credit passes in Math & Commerce'
+                },
+                arts: {
+                    qualified: true,
+                    reason: 'Qualified with general requirements'
+                },
+                technology: {
+                    qualified: mathCredit,
+                    reason: mathCredit ? 'Qualified - Math Credit obtained' : 'Need Credit pass in Mathematics'
+                },
+                mathematics: {
+                    qualified: mathematicsQualified,
+                    reason: mathematicsReason
+                }
+            };
+        }
+
+        // Display processed results
+        function displayProcessedResults() {
+            const resultsSection = document.getElementById('processedResults');
+            const resultsTable = document.getElementById('resultsTable');
+            
+            resultsTable.innerHTML = '';
+            
+            processedStudents.forEach(student => {
+                const analysis = analyzeStudent(student);
+                const row = document.createElement('tr');
+                row.className = 'table-row border-b border-white/10';
+                
+                const qualifiedStreams = [];
+                if (analysis.streams.science.qualified) qualifiedStreams.push('Science');
+                if (analysis.streams.commerce.qualified) qualifiedStreams.push('Commerce');
+                if (analysis.streams.arts.qualified) qualifiedStreams.push('Arts');
+                if (analysis.streams.technology.qualified) qualifiedStreams.push('Technology');
+                if (analysis.streams.mathematics.qualified) qualifiedStreams.push('Mathematics');
+                
+                row.innerHTML = `
+                    <td class="py-4 px-4 text-white font-inter">${student.indexNumber}</td>
+                    <td class="py-4 px-4 text-white">${student.name}</td>
+                    <td class="py-4 px-4 text-white/70 text-sm">${student.school}</td>
+                    <td class="py-4 px-4 text-green-400">${analysis.gradeA}A ${analysis.gradeB}B ${analysis.gradeC}C</td>
+                    <td class="py-4 px-4 ${analysis.generalQualified ? 'text-green-400' : 'text-red-400'}">${analysis.qualificationStatus}</td>
+                    <td class="py-4 px-4 text-blue-400">${qualifiedStreams.join(', ') || 'None'}</td>
+                    <td class="py-4 px-4">
+                        <button onclick="viewStudentDetails('${student.indexNumber}')" class="text-white/60 hover:text-white text-sm">View</button>
+                    </td>
+                `;
+                resultsTable.appendChild(row);
+            });
+            
+            resultsSection.classList.remove('hidden');
+        }
+
+        // View student details
+        function viewStudentDetails(indexNumber) {
+            playClickSound();
+            const student = processedStudents.find(s => s.indexNumber === indexNumber);
+            if (student) {
+                const analysis = analyzeStudent(student);
+                
+                let subjectDetails = 'SUBJECT RESULTS:\n';
+                Object.entries(student.subjects).forEach(([subject, grade]) => {
+                    subjectDetails += `• ${subject}: ${grade}\n`;
+                });
+                
+                let streamDetails = '\nSTREAM QUALIFICATIONS:\n';
+                Object.entries(analysis.streams).forEach(([stream, info]) => {
+                    const status = info.qualified ? '✅' : '❌';
+                    streamDetails += `${status} ${stream.toUpperCase()}: ${info.reason}\n`;
+                });
+                
+                alert(`📋 Student Details\n\nIndex: ${student.indexNumber}\nName: ${student.name}\nSchool: ${student.school}\n\n${subjectDetails}\n📊 Summary: ${analysis.gradeA}A, ${analysis.gradeB}B, ${analysis.gradeC}C, ${analysis.gradeS}S, ${analysis.gradeW}W\nPasses: ${analysis.totalPasses}/9 | Credits: ${analysis.totalCredits}\n\n✅ General Qualification: ${analysis.qualificationStatus}${streamDetails}`);
+            }
+        }
+
+        // Student search function
+        async function searchStudentResults() {
+            playClickSound();
+            const indexNumber = document.getElementById('studentIndex').value.trim();
+            
+            if (!indexNumber) {
+                alert('Please enter your index number');
+                return;
+            }
+            
+            showProcessingOverlay('Searching...', 'Looking up your results in the database...', 50);
+            
+            setTimeout(() => {
+                // Search in processed students first
+                let student = processedStudents.find(s => s.indexNumber === indexNumber);
+                
+                // If not found, search in demo database
+                if (!student) {
+                    student = DEMO_STUDENTS.find(s => s.indexNumber === indexNumber);
+                }
+                
+                hideProcessingOverlay();
+                
+                if (student) {
+                    playSuccessSound();
+                    displayStudentResults(student);
+                } else {
+                    alert(`❌ No results found for index number: ${indexNumber}\n\nTry these demo index numbers:\n• 2024001234\n• 2024001235\n• 2024001236\n\nOr upload your result sheet through the Admin Portal first.`);
+                }
+            }, 800);
+        }
+
+        // Display student results
+        function displayStudentResults(student) {
+            const analysis = analyzeStudent(student);
+            
+            // Student Info
+            const studentInfo = document.getElementById('studentInfo');
+            studentInfo.innerHTML = `
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-3xl">🎓</span>
+                    </div>
+                    <h3 class="text-3xl font-inter font-bold text-white mb-2">${student.name}</h3>
+                    <p class="text-white/80 text-lg mb-2">Index: ${student.indexNumber}</p>
+                    <p class="text-white/70">${student.school}</p>
+                    <div class="mt-4 p-4 glass-card-dark rounded-lg inline-block">
+                        <span class="text-2xl mr-2">${analysis.generalQualified ? '✅' : '❌'}</span>
+                        <span class="text-white font-bold ${analysis.generalQualified ? 'text-green-400' : 'text-red-400'}">${analysis.qualificationStatus}</span>
+                    </div>
+                </div>
+            `;
+            
+            // Subject Results
+            const subjectResults = document.getElementById('subjectResults');
+            subjectResults.innerHTML = '';
+            
+            Object.entries(student.subjects).forEach(([subject, grade]) => {
+                const gradeClass = `grade-${grade.toLowerCase()}`;
+                const gradeDiv = document.createElement('div');
+                gradeDiv.className = 'flex justify-between items-center p-3 glass-card-dark rounded-lg';
+                gradeDiv.innerHTML = `
+                    <span class="text-white font-medium">${subject}</span>
+                    <span class="${gradeClass} font-inter font-bold text-lg">${grade}</span>
+                `;
+                subjectResults.appendChild(gradeDiv);
+            });
+            
+            // Performance Summary
+            const performanceSummary = document.getElementById('performanceSummary');
+            performanceSummary.innerHTML = `
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="p-4 glass-card-dark rounded-lg text-center">
+                        <h5 class="text-lg font-inter font-bold text-green-400">A Grades</h5>
+                        <p class="text-2xl font-bold text-white">${analysis.gradeA}</p>
+                    </div>
+                    <div class="p-4 glass-card-dark rounded-lg text-center">
+                        <h5 class="text-lg font-inter font-bold text-blue-400">B Grades</h5>
+                        <p class="text-2xl font-bold text-white">${analysis.gradeB}</p>
+                    </div>
+                    <div class="p-4 glass-card-dark rounded-lg text-center">
+                        <h5 class="text-lg font-inter font-bold text-yellow-400">C Grades</h5>
+                        <p class="text-2xl font-bold text-white">${analysis.gradeC}</p>
+                    </div>
+                    <div class="p-4 glass-card-dark rounded-lg text-center">
+                        <h5 class="text-lg font-inter font-bold text-red-400">S Grades</h5>
+                        <p class="text-2xl font-bold text-white">${analysis.gradeS}</p>
+                    </div>
+                </div>
+                
+                <div class="p-4 glass-card-dark rounded-lg">
+                    <h4 class="text-white font-bold mb-2">📊 Performance Analysis</h4>
+                    <p class="text-white/70 text-sm mb-2">
+                        Total Passes: ${analysis.totalPasses}/9 subjects<br>
+                        Credits (A, B, C): ${analysis.totalCredits}<br>
+                        Mathematics: ${student.subjects['Mathematics'] || 'Not taken'}<br>
+                        General Qualification: ${analysis.generalQualified ? 'Met ✅' : 'Not Met ❌'}
+                    </p>
+                    ${analysis.generalQualified ? 
+                        '<p class="text-green-400 text-sm">🎉 Congratulations! You qualify for A-Level studies.</p>' :
+                        '<p class="text-red-400 text-sm">📚 You need to improve your results to qualify for A-Level.</p>'
+                    }
+                </div>
+            `;
+            
+            // Stream Recommendations
+            displayStreamRecommendations(analysis.streams);
+            
+            // Show results section
+            document.getElementById('studentResults').classList.remove('hidden');
+        }
+
+        // Display stream recommendations
+        function displayStreamRecommendations(streams) {
+            const streamRecommendations = document.getElementById('streamRecommendations');
+            streamRecommendations.innerHTML = '';
+            
+            const streamData = [
+                {
+                    id: 'science',
+                    title: 'Science Stream',
+                    icon: '🔬',
+                    description: 'Physical Science / Biological Science',
+                    subjects: ['Physics', 'Chemistry', 'Biology', 'Mathematics'],
+                    careers: ['Medicine', 'Engineering', 'Research', 'Pharmacy']
+                },
+                {
+                    id: 'commerce',
+                    title: 'Commerce Stream',
+                    icon: '💼',
+                    description: 'Business & Economics',
+                    subjects: ['Economics', 'Business Studies', 'Accounting', 'Statistics'],
+                    careers: ['Business', 'Banking', 'Finance', 'Management']
+                },
+                {
+                    id: 'arts',
+                    title: 'Arts Stream',
+                    icon: '🎨',
+                    description: 'Humanities & Languages',
+                    subjects: ['History', 'Geography', 'Literature', 'Political Science'],
+                    careers: ['Teaching', 'Law', 'Journalism', 'Social Work']
+                },
+                {
+                    id: 'technology',
+                    title: 'Technology Stream',
+                    icon: '⚙️',
+                    description: 'Engineering Technology',
+                    subjects: ['Engineering Technology', 'Science for Technology', 'Mathematics'],
+                    careers: ['Engineering', 'IT', 'Manufacturing', 'Construction']
+                },
+                {
+                    id: 'mathematics',
+                    title: 'Mathematics Stream',
+                    icon: '📐',
+                    description: 'Pure & Applied Mathematics',
+                    subjects: ['Pure Mathematics', 'Applied Mathematics', 'Statistics', 'Physics/Chemistry'],
+                    careers: ['Actuarial Science', 'Research', 'Engineering', 'Data Science']
+                }
+            ];
+            
+            streamData.forEach(stream => {
+                const streamInfo = streams[stream.id];
+                const cardClass = streamInfo.qualified ? 'stream-card recommended' : 'stream-card not-suitable';
+                const statusIcon = streamInfo.qualified ? '✅' : '❌';
+                const statusText = streamInfo.qualified ? 'QUALIFIED' : 'NOT QUALIFIED';
+                const statusColor = streamInfo.qualified ? 'text-green-400' : 'text-red-400';
+                
+                const streamCard = document.createElement('div');
+                streamCard.className = `${cardClass} rounded-2xl p-6`;
+                streamCard.innerHTML = `
+                    <div class="text-center mb-4">
+                        <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <span class="text-2xl">${stream.icon}</span>
+                        </div>
+                        <h4 class="text-lg font-inter font-bold text-white mb-1">${stream.title}</h4>
+                        <p class="text-white/70 text-xs mb-2">${stream.description}</p>
+                        <div class="flex items-center justify-center space-x-2">
+                            <span class="text-lg">${statusIcon}</span>
+                            <span class="${statusColor} font-inter font-bold text-sm">${statusText}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="p-3 glass-card-dark rounded-lg">
+                            <h5 class="text-white font-bold text-xs mb-1">📚 SUBJECTS</h5>
+                            <p class="text-white/70 text-xs">${stream.subjects.join(', ')}</p>
+                        </div>
+                        <div class="p-3 glass-card-dark rounded-lg">
+                            <h5 class="text-white font-bold text-xs mb-1">🎯 CAREERS</h5>
+                            <p class="text-white/70 text-xs">${stream.careers.join(', ')}</p>
+                        </div>
+                        <div class="p-3 glass-card-dark rounded-lg">
+                            <h5 class="text-white font-bold text-xs mb-1">📋 STATUS</h5>
+                            <p class="text-white/70 text-xs">${streamInfo.reason}</p>
+                        </div>
+                    </div>
+                `;
+                streamRecommendations.appendChild(streamCard);
+            });
+        }
+
+        // Processing overlay functions
+        function showProcessingOverlay(title, status, progress) {
+            document.getElementById('processingTitle').textContent = title;
+            document.getElementById('processingStatus').textContent = status;
+            document.getElementById('processingProgress').style.width = progress + '%';
+            document.getElementById('processingOverlay').classList.remove('hidden');
+            
+            // Play calm processing sound
+            playProcessingSound();
+        }
+
+        function updateProcessingStatus(status, progress) {
+            document.getElementById('processingStatus').textContent = status;
+            document.getElementById('processingProgress').style.width = progress + '%';
+        }
+
+        function hideProcessingOverlay() {
+            document.getElementById('processingOverlay').classList.add('hidden');
+        }
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            showPage('home');
+            
+            // Add enter key support for login
+            document.getElementById('loginEmail').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('loginPassword').focus();
+                }
+            });
+            
+            document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    processLogin();
+                }
+            });
+
+            // Add enter key support for AI chat
+            document.getElementById('chatInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            setTimeout(() => {
+                alert('🚀 Welcome to OL Analyzer V12.0!\n\n🆕 NEW IN VERSION 12:\n• 🤖 AI Assistant with ChatGPT integration\n• 📺 YouTube educational videos\n• 📱 Floating tabs interface\n• 🔊 Calm processing sounds\n• 💬 Interactive chat system\n• 🎯 Smart video recommendations\n\n✅ PREVIOUS FEATURES:\n• Secure School Registration System\n• Fast processing system\n• Custom table builder\n• Mathematics requirement emphasis\n• Real-time qualification analysis\n\n🔐 DEMO LOGIN CREDENTIALS:\n• Admin: admin@school.lk / Admin2024!\n• Student: student@school.lk / Student123!\n\n🎓 FOR STUDENTS:\nLogin and access the Student Portal to:\n• Chat with AI assistant\n• Watch A-Level tutorial videos\n• Get personalized study guidance\n• Search your results\n\n🏫 FOR SCHOOLS:\nLogin as admin to register your school and generate secure credentials!\n\nEnter your credentials to get started!');
+            }, 1000);
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98122d61468fa8e1',t:'MTc1ODIxMjQ5NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
